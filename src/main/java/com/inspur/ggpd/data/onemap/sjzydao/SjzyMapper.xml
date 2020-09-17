@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.data.onemap.sjzydao.SjzyMapper">
+    <select id="getInside" resultType="long">
+        SELECT SUM(amount) FROM
+            <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+                SELECT COUNT(1) amount FROM ${item} WHERE SJLY = '01'
+            </foreach>
+    </select>
+
+    <select id="getOutside" resultType="java.lang.Long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item} WHERE SJLY = '02'
+        </foreach>
+    </select>
+
+    <select id="getInternet" resultType="java.lang.Long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item} WHERE SJLY = '03'
+        </foreach>
+    </select>
+
+    <select id="getIOT" resultType="java.lang.Long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item} WHERE SJLY = '04'
+        </foreach>
+    </select>
+
+    <select id="getDailyData" resultType="long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item} WHERE CJSJ LIKE CONCAT(TO_CHAR(TRUNC(SYSDATE - 1),'yyyy-mm-dd'),'%')
+        </foreach>
+    </select>
+
+    <select id="getAccumulatedData" resultType="long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item}
+        </foreach>
+    </select>
+
+    <select id="getAmount" resultType="java.lang.Long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item}
+        </foreach>
+    </select>
+
+    <select id="getStorage" resultType="java.lang.Long">
+        SELECT SUM(amount) FROM
+        <foreach close=")" collection="list" item="item" open="(" separator=" UNION ALL ">
+            SELECT COUNT(1) amount FROM ${item} WHERE SUBSTR(CJSJ, 0, 10) = TO_CHAR(TRUNC(SYSDATE - 1), 'yyyy-MM-dd')
+        </foreach>
+    </select>
+</mapper>

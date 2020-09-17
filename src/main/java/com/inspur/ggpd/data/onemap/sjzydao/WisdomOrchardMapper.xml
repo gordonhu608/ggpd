@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.data.onemap.sjzydao.WisdomOrchardMapper">
+    <select id="getWisdomOrchardData" resultType="com.inspur.ggpd.data.onemap.data.OrchardPropertiesEntity">
+        SELECT
+            GYMC,GDJD,GDWD,BDJD,BDWD,WD,SD,ZFS,GHYXFS,FS,FX,RJSL,RZFL,SQ20HSL,SQ40HSL,SQ60HSL,SQ80HSL,SQ20WD,SQ40WD,SQ60WD,SQ80WD,JCSJ
+        FROM
+            (
+                SELECT
+                    C.GYMC,
+                    C.gdjd,
+                    C.gdwd,
+                    C.bdjd,
+                    C.bdwd,
+                    A.WD,
+                    A.SD,
+                    A.ZFS,
+                    A.GHYXFS,
+                    A.FS,
+                    A.FX,
+                    A.RJSL,
+                    A.RZFL,
+                    A.SQ20HSL,
+                    A.SQ40HSL,
+                    A.SQ60HSL,
+                    A.SQ80HSL,
+                    A.SQ20WD,
+                    A.SQ40WD,
+                    A.SQ60WD,
+                    A.SQ80WD,
+                    A.JCSJ,
+                    ROW_NUMBER () OVER ( PARTITION BY C.GYMC ORDER BY A.JCSJ DESC ) AS ROW_FLAG
+                FROM
+                    CYZC_ZHGY_GYJCSJ C
+                        LEFT JOIN CYZC_ZHGY_SQSB B ON C.ID = B.ID
+                        LEFT JOIN CYZC_ZHGY_SQSJ A ON A.SBBH = B.SBBH
+            )
+        WHERE
+            ROW_FLAG =1
+    </select>
+    <select id="getWisdomOrchardDataByGYBH" resultType="java.util.Map">
+        SELECT *
+        FROM (
+                 SELECT A.WD,
+                        A.SD,
+                        A.ZFS,
+                        A.GHYXFS,
+                        A.FS,
+                        A.FX,
+                        A.RJSL,
+                        A.RZFL,
+                        A.SQ20HSL,
+                        A.SQ40HSL,
+                        A.SQ60HSL,
+                        A.SQ80HSL,
+                        A.SQ20WD,
+                        A.SQ40WD,
+                        A.SQ60WD,
+                        A.SQ80WD,
+                        A.JCSJ
+                 FROM CYZC_ZHGY_SQSJ A
+                 WHERE A.SBBH = (SELECT SBBH
+                                 FROM CYZC_ZHGY_GYJCSJ B
+                                          LEFT JOIN CYZC_ZHGY_SQSB C ON B.ID = C.ID
+                 <if test="gybh != null and gybh !=''">
+                 WHERE B.GYBH = #{gybh}
+                 </if>
+                                 )
+                 ORDER BY A.JCSJ DESC)
+        WHERE ROWNUM = 1
+    </select>
+</mapper>

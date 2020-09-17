@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.resource.catalog.dao.SourceCatalogMapper">
+    <update id="click">
+        UPDATE SOURCE_CATALOG SET CLICK_FREQUENCY = CLICK_FREQUENCY + 1 WHERE ID = #{id}
+    </update>
+
+    <select id="findAll" resultType="com.inspur.ggpd.resource.catalog.data.SourceCatalog">
+        SELECT ID, SOURCE_NAME, PARENT_ID, SOURCE_TYPE, ACTION_URL, TABLE_CODE, ORDER_NO FROM SOURCE_CATALOG
+        WHERE SOURCE_TYPE = #{type} ORDER BY ORDER_NO
+    </select>
+
+    <select id="queryTableCode" resultType="java.lang.String">
+        SELECT sc.TABLE_CODE FROM SOURCE_CATALOG sc
+        INNER JOIN (SELECT ID, SOURCE_NAME FROM SOURCE_CATALOG WHERE PARENT_ID IS NULL) c ON c.ID = sc.PARENT_ID
+        WHERE sc.SOURCE_TYPE = '02' AND sc.TABLE_CODE IS NOT NULL
+        <if test="null != type and '' != type">
+            AND c.SOURCE_NAME = #{type}
+        </if>
+    </select>
+</mapper>

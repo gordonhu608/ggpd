@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.onemap.sjzydao.GreenEnterpriseMapper">
+
+<!--    查询合作社与绿色企业信息-->
+    <select id="getGreenEnterpriseData" parameterType="map" resultType="map">
+        SELECT QYMC, JD, WD,ZSQFQR,ZSDQRQ, LISTAGG ( DT, ',' ) WITHIN GROUP ( ORDER BY DT ) AS cp FROM
+        (SELECT A.*,A.CPMC||HZCL||'吨' AS DT FROM CHJG_CHJG_LSSPQY A) B
+        GROUP BY QYMC, JD, WD,ZSQFQR,ZSDQRQ
+    </select>
+
+<!--    查询进出口贸易流向信息-->
+    <select id="getTradeFlowData" parameterType="map" resultType="map">
+        SELECT
+        B.GJMC,
+        <if test='tradeFlow == "export"'>
+            ROUND(SUM(A.DQCKSL), 2) AS "cksl"
+        </if>
+        <if test='tradeFlow == "import"'>
+            ROUND(SUM(A.DQJKSL), 2) AS "jksl"
+        </if>
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B
+        WHERE A.GJID = B.GJID
+        <if test="tradeProduct == 0">
+            AND A.CPID = #{tradeProductCode}
+        </if>
+        <if test="tradeProduct == 1">
+            AND A.CPID in ('20097100','20097000','20097900')
+        </if>
+        AND SUBSTR( RQ, 1, 4 ) = #{year}
+        <if test='tradeFlow == "export"'>
+            AND A.DQCKSL IS NOT NULL
+        </if>
+        <if test='tradeFlow == "import"'>
+            AND A.DQJKSL IS NOT NULL
+        </if>
+        GROUP BY B.GJMC
+        <if test='tradeFlow == "export"'>
+            ORDER BY "cksl" DESC
+        </if>
+        <if test='tradeFlow == "import"'>
+            ORDER BY "jksl" DESC
+        </if>
+    </select>
+
+</mapper>

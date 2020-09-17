@@ -1,0 +1,1 @@
+${year}年全国苹果种植面积${plantArea}万亩，产量${yield}万吨，单产每亩${yieldPerUnit}公斤；同比${lastYear}年分别增长${plantAreaTb}%、${yieldTb}%、${yieldPerUnitTb}%;全国每亩均成本${costPerMu}元，每公斤平均${costPerKg}元，其中人工成本${laborCost}元,占比${laborCostProportion}%,物资与服务费用${expenses}元，占比${expensesProportion}%，与去年同比，总成本同比上涨${costTb}%。

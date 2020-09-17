@@ -1,0 +1,362 @@
+/* 以下适配设置是针对本系统设置的特定值  不通用  */
+@media screen and (width: 1200px) {
+    html {
+        font-size: 100px;
+        min-width: 100%;
+    }
+}
+
+@media screen and (min-width: 899px) {
+    html {
+        font-size: 74.96339678px !important;
+    }
+}
+
+@media screen and (min-width: 1124px) {
+    html {
+        font-size: 93.70424597px !important;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    html {
+        font-size: 100px !important;
+    }
+}
+
+@media screen and (min-width: 1265px) {
+    html {
+        font-size: 105.41727672px !important;
+    }
+}
+
+@media screen and (min-width: 1405px) {
+    html {
+        font-size: 117.13030747px !important
+    }
+}
+
+@media screen and (min-width: 1686px) {
+    html {
+        font-size: 140.55636897px !important;
+    }
+}
+
+@media screen and (min-width: 3373px) {
+    html {
+        font-size: 281.11273792px !important;
+    }
+}
+
+html {
+    width: 100%;
+}
+
+body {
+    font-family: arial,microsoft yahei,simsun,simhei,sans-serif;
+    font-size: 0.14rem;
+    width: 100%;
+    margin: 0;
+    padding-bottom: 0.4rem;
+}
+
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+ul, li {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: #000;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 1px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background: #ccc;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 5px;
+}
+
+.crumbs {
+    height: 0.46rem;
+    line-height: 0.46rem;
+    color: #A39F99;
+    background: url(../../img/crumbs_bg.png) no-repeat;
+    background-position: left center;
+    padding-left: 0.24rem;
+}
+
+.crumbs span {
+    color: #333;
+}
+.crumbs span.home{
+    color: #A39F99;
+    cursor: pointer;
+}
+.container {
+    width: 100%;
+    overflow: hidden;
+}
+
+.section {
+    width: 100%;
+    margin-bottom: 0.25rem;
+}
+
+.section1 {
+    height: 4.89rem;
+}
+
+.section > div {
+    float: left;
+    position: relative;
+    height: 100%;
+}
+
+/* 国内苹果平均价格 */
+.avg_price {
+    width: 5.86rem;
+    border: solid 0.01rem #ddd;
+}
+
+.module_line {
+    width: 100%;
+    height: 0.02rem;
+    background: url(../../img/line.png) no-repeat;
+    background-size: 100% 0.02rem;
+}
+
+.module_title {
+    width: 100%;
+    height: 0.57rem;
+    font-size: 0.24rem;
+    line-height: 0.57rem;
+    color: #004873;
+    padding-left: 0.2rem;
+    background-image: linear-gradient(90deg, #f1f5ff 0%, #ffffff 100%);
+    border-bottom: dashed 1px #d1d8e0;
+}
+
+.avg_price_info {
+    width: 100%;
+    height: calc(100% - 0.6rem);
+    padding-top: 0.67rem;
+    position: relative;
+}
+
+.avg_price_tab {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.15rem;
+    height: 0.3rem;
+    line-height: 0.3rem;
+}
+
+.avg_price_tab div {
+    float: left;
+    width: 0.68rem;
+    height: 0.3rem;
+    color: #005494;
+    border: 1px solid #005391;
+    margin-left: -1px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.avg_price_tab div:hover,
+.avg_price_tab div.active {
+    color: #fff;
+    background-color: #005391;
+}
+
+.avr_price_chart {
+    width: 100%;
+    height: 100%;
+}
+
+/*苹果进出口情况*/
+.import_export {
+    width: 5.87rem;
+    border: solid 0.01rem #ddd;
+    margin-left: 0.26rem;
+}
+
+.import_export_info {
+    width: 100%;
+    height: calc(100% - 0.6rem);
+    padding-top: 0.67rem;
+    position: relative;
+}
+
+.select_content {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.15rem;
+    height: 0.3rem;
+    line-height: 0.3rem;
+}
+
+.select_content select {
+    float: left;
+    margin-left: 0.1rem;
+    width: 1.55rem;
+    height: 0.3rem;
+    border-color: #ECEAE8;
+    padding-left: 0.12rem;
+    outline: none;
+}
+
+.import_export_chart {
+    width: 100%;
+    height: 100%;
+}
+
+/*农产品200指数*/
+.section2 {
+    height: 6rem;
+}
+
+.section2 > div {
+    width: 100%;
+    border: solid 0.01rem #ddd;
+}
+
+.module_title_time {
+    font-size: 0.16rem;
+}
+
+.indices_content {
+    width: 100%;
+    height: 0.98rem;
+    /*padding: 0.15rem 0;*/
+}
+
+.indices_content > div {
+    float: left;
+    width: 33.3%;
+    height: 100%;
+    border-right: 1px dashed #E1DFDA;
+    padding-top: 0.25rem;
+    padding-bottom: 0.15rem;
+    text-align: center;
+    cursor: pointer;
+}
+
+.indices_content > div:hover,
+.indices_content > div.active {
+    background-color: #ECF6FF;
+}
+
+.indices_content > div:last-child {
+    border-right: none;
+}
+
+.indices_name {
+    font-size: 0.16rem;
+}
+
+.indices_num {
+    line-height: 0.4rem;
+    font-size: 0.14rem;
+}
+
+.indices_num > span {
+    margin-left: 0.05rem;
+}
+
+.indices_num > span:first-child {
+    font-size: 0.22rem;
+    font-weight: 600;
+}
+
+.indices_tab {
+    width: 100%;
+    height: 0.4rem;
+    line-height: 0.4rem;
+    border-top: 1px dashed #D5D9DC;
+    background-color: #F9F7FB;
+}
+
+.indices_tab > div {
+    float: left;
+    width: 20%;
+    height: 100%;
+    position: relative;
+    text-align: center;
+    cursor: pointer;
+}
+
+.indices_tab > div:after {
+    content: '';
+    position: absolute;
+    top: 0.1rem;
+    right: 0;
+    width: 0;
+    height: 0.2rem;
+    border-right: 1px solid #D1DBDE;
+}
+
+.indices_tab > div:last-child:after {
+    display: none;
+}
+
+.indices_tab > div:hover,
+.indices_tab > div.active {
+    background-color: #005391;
+    color: #fff;
+}
+
+.indices_tab > div:hover:before,
+.indices_tab > div.active:before {
+    content:'';
+    position:absolute;
+    top:100%;
+    left:46%;
+    width:0;
+    height:0;
+    border-width:0.07rem;
+    border-style:solid;
+    border-color:transparent;
+    margin-bottom:-1px;
+    border-top-width:0.08rem;
+    border-top-color:currentColor;
+    color:#005391;
+}
+
+.indices_tab > div:hover:after,
+.indices_tab > div.active:after {
+    display: none;
+}
+
+.indices_chart {
+    width: 100%;
+    height: calc(100% - 2.07rem);
+    margin-top: 0.1rem;
+}
+
+.section3 {
+    height: 6.08rem;
+    margin-bottom: 0;
+}
+
+.section3 > div {
+    width: 100%;
+    border: solid 0.01rem #ddd;
+}
+
+.apple_indices_content > div {
+    width: 25%;
+}

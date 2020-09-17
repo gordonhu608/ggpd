@@ -1,0 +1,72 @@
+.timeline {
+    width: 94%;
+    height: 0.8rem;
+    margin-left: 2%;
+    /* padding-top: 0.2rem; */
+    position: relative;
+    overflow: hidden;
+}
+
+.timeline ul {
+    height: 100%;
+    padding-top: 0.2rem;
+    overflow: hidden;
+    position: relative;
+    left: 0;
+}
+
+.timeline ul li {
+    float: left;
+    width: 1rem;
+    height: 0.6rem;
+    line-height: 0.4rem;
+    font-size: 0.1rem;
+    color: #0070E1;
+    border-top: 1px solid #00427B;
+    text-align: center;
+    position: relative;
+}
+
+.timeline ul li:first-child,
+.timeline ul li:last-child {
+    border: none;
+}
+
+.timeline ul li:first-child .half_line {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 0;
+    border-top: 1px solid #00427B;
+}
+.timeline ul li:last-child .half_line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 0;
+    border-top: 1px solid #00427B;
+}
+
+.timeline ul li .time_point {
+    position: absolute;
+    top: -0.1rem;
+    left: 0.4rem;
+    width: 0.2rem;
+    height: 0.2rem;
+    background: url(../../img/directionMonitor/bluedot.png) no-repeat;
+    background-size: 100% 100%;
+    cursor: pointer;
+}
+
+.timeline ul li .time_point:hover,
+.timeline ul li .time_point.active {
+    background: url(../../img/directionMonitor/yellowdot.png) no-repeat;
+    background-size: 100% 100%;
+}
+
+.timeline ul li .time_point:hover+.time_name,
+.timeline ul li .time_point.active+.time_name {
+    color: #E6FF2A;
+}

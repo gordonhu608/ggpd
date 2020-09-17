@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.newsPopularFeelings.sjzydao.NewsInfoMapper">
+    <resultMap type="com.inspur.ggpd.newsPopularFeelings.data.NewsInfo" id="newsInfo">
+        <result property="id" column="ID"></result>
+        <result property="bt" column="BT"></result>
+        <result property="ly" column="LY"></result>
+        <result property="nr" column="NR"></result>
+        <result property="lj" column="LJ"></result>
+        <result property="sjly" column="SJLY"></result>
+        <result property="cjsj" column="CJSJ"></result>
+        <result property="gxsj" column="GXSJ"></result>
+        <result property="wzid" column="WZID"></result>
+        <result property="zy" column="ZY"></result>
+        <result property="zz" column="ZZ"></result>
+        <result property="fbsj" column="FBSJ"></result>
+    </resultMap>
+
+    <select id="getNewsInfo" parameterType="map" resultMap="newsInfo">
+        SELECT
+            ID,
+            BT,
+            LY,
+            NR,
+            LJ,
+            SJLY,
+            CJSJ,
+            GXSJ,
+            WZID,
+            ZY,
+            ZZ,
+            FBSJ
+        FROM (
+            SELECT tt.*, ROWNUM AS rowno
+            FROM (
+                SELECT t.*
+                FROM CYZC_XWYQ_XWXX t
+                ORDER BY FBSJ DESC) tt
+            WHERE ROWNUM &lt;= #{pageNumber} * #{pageSize}) table_alias
+        WHERE table_alias.rowno &gt; (#{pageNumber}-1) * #{pageSize}
+    </select>
+
+    <select id="getNewsInfoTotal" resultType="int">
+        SELECT COUNT(*) as "COUNT" FROM CYZC_XWYQ_XWXX
+    </select>
+
+    <select id="getNewsInfoDetail" parameterType="map" resultMap="newsInfo">
+        SELECT * FROM CYZC_XWYQ_XWXX WHERE ID = #{id}
+    </select>
+
+    <select id="getStripNewsInfoId" parameterType="map" resultMap="newsInfo">
+        SELECT * FROM CYZC_XWYQ_XWXX A
+        WHERE ID = (
+            SELECT C.P
+                FROM (
+                    SELECT T.ID, LAG(T.ID, 1, 0) OVER(ORDER BY t.FBSJ DESC) AS P
+                        FROM CYZC_XWYQ_XWXX T) C
+                WHERE C.ID = #{id})
+    </select>
+
+    <select id="getNextStripNewsInfoId" parameterType="map" resultMap="newsInfo">
+        SELECT * FROM CYZC_XWYQ_XWXX A
+        WHERE ID = (
+            SELECT C.P
+                FROM (
+                    SELECT T.ID, LEAD(T.ID, 1, 0) OVER(ORDER BY t.FBSJ DESC) AS P
+                        FROM CYZC_XWYQ_XWXX T) C
+                WHERE C.ID = #{id})
+    </select>
+</mapper>

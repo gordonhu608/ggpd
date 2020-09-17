@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.data.onemap.sjzydao.AppleTradePriceMapper">
+
+
+    <!-- 查询 最高价，最低价 ，开盘价 ，收盘价 -->
+    <select id="getDayAppleTradeMarketPrice" parameterType="map"
+            resultType="map">
+        SELECT SUBSTR(JJSJ_GNJG_PFJG.BJRQ ,0, 10) AS RQ,
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as KPJ,
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as SPJ,
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as ZDJ,
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as ZGJ,
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as ZJJ
+
+        FROM
+        JJSJ_GNJG_PFSCFB,JJSJ_GNJG_PFJG
+
+
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC=JJSJ_GNJG_PFSCFB.PFSCM
+
+        AND BJRQ &gt;=
+        #{beginDate} AND BJRQ &lt;=#{endDate}
+
+
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+
+
+        GROUP BY SUBSTR(JJSJ_GNJG_PFJG.BJRQ ,0, 10)
+        ORDER BY
+        SUBSTR(JJSJ_GNJG_PFJG.BJRQ ,0, 10) ASC
+
+    </select>
+
+    <!-- 按地区分组查询价格 -->
+    <select id="getAppleTradeMarketDistrictsPrice" parameterType="map"
+            resultType="map">
+        SELECT JJSJ_GNJG_PFSCFB.SF as "name",
+
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as "value"
+
+        FROM
+        JJSJ_GNJG_PFSCFB,JJSJ_GNJG_PFJG
+
+
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC=JJSJ_GNJG_PFSCFB.PFSCM
+
+        AND BJRQ &gt;=
+        #{beginDate} AND BJRQ &lt;=#{endDate}
+
+
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        <if test=" districts != ''  and districts !=null  ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+
+
+        GROUP BY JJSJ_GNJG_PFSCFB.SF
+
+
+    </select>
+
+
+    <!-- 按地区分组查询价格top10 -->
+    <select id="getAppleTradePriceTop" parameterType="map"
+            resultType="map">
+        SELECT * from ( SELECT * from ( SELECT JJSJ_GNJG_PFSCFB.SF as "name",
+
+        round(sum(JJSJ_GNJG_PFJG.ZJJ)/count(*),2) as "value"
+
+        FROM
+        JJSJ_GNJG_PFSCFB,JJSJ_GNJG_PFJG
+
+
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC=JJSJ_GNJG_PFSCFB.PFSCM
+
+        AND BJRQ &gt;=
+        #{beginDate} AND BJRQ &lt;=#{endDate}
+
+
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        <if test=" districts != ''  and districts !=null  ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+
+
+        GROUP BY JJSJ_GNJG_PFSCFB.SF) order by "value" desc) where
+        rownum&lt;=10 order by "value"
+
+
+    </select>
+
+    <!-- 根据日数据统计月数据 -->
+    <select id="getMonthAppleTradeMarketPrice" parameterType="map"
+            resultType="map">
+        SELECT
+        MONTHPRICE.*,
+        DAYPRICEB.ZJJ AS SPJ,
+        DAYPRICEC.ZJJ AS KPJ
+        FROM
+        (
+        SELECT
+        SUBSTR( DAYRQ, 0, 7 ) AS RQ,
+        ROUND( sum( ZJJ ) / count( * ), 2 )
+        AS ZJJ,
+        MAX( ZJJ ) AS ZGJ,
+        MIN( ZJJ ) AS ZDJ,
+        MAX( DAYRQ ) AS MAXRQ,
+        MIN(
+        DAYRQ ) AS MINRQ
+        FROM
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 ) AS
+        DAYRQ,
+        round( sum( JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC =
+        JJSJ_GNJG_PFSCFB.PFSCM
+        AND BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;=
+        #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICE
+        GROUP BY
+        SUBSTR(
+        DAYRQ, 0, 7 )
+        ) MONTHPRICE,
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )
+        AS DAYRQ,
+        round( sum( JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC =
+        JJSJ_GNJG_PFSCFB.PFSCM
+        AND BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;=
+        #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICEB,
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 ) AS DAYRQ,
+        round( sum(
+        JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC = JJSJ_GNJG_PFSCFB.PFSCM
+        AND
+        BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;= #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICEC
+        WHERE
+        MONTHPRICE.MAXRQ = DAYPRICEB.DAYRQ
+        AND MONTHPRICE.MINRQ =
+        DAYPRICEC.DAYRQ ORDER by RQ
+
+
+    </select>
+    <!-- 根据日数据统计周数据 -->
+    <select id="getWeekAppleTradeMarketPrice" parameterType="map"
+            resultType="map">
+        SELECT
+        MONTHPRICE.*,
+        DAYPRICEB.ZJJ AS SPJ,
+        DAYPRICEC.ZJJ AS KPJ
+        FROM
+        (
+        SELECT
+
+        to_char(next_day(to_date(DAYRQ,'yyyy-MM-dd')+15/24 -
+        7,2),'yyyy-MM-dd') AS RQ,
+        round( sum( ZJJ ) / count( * ), 2 ) AS ZJJ,
+        MAX( ZJJ ) AS ZGJ,
+        MIN( ZJJ ) AS ZDJ,
+        MAX( DAYRQ ) AS MAXRQ,
+        MIN( DAYRQ )
+        AS MINRQ
+        FROM
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 ) AS DAYRQ,
+        round( sum( JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC =
+        JJSJ_GNJG_PFSCFB.PFSCM
+        AND BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;=
+        #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )
+        ) DAYPRICE
+        GROUP BY
+
+        to_char(next_day(to_date(DAYRQ,'yyyy-MM-dd')+15/24 -
+        7,2),'yyyy-MM-dd')
+        ) MONTHPRICE,
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0,
+        10 ) AS DAYRQ,
+        round( sum( JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS
+        ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC =
+        JJSJ_GNJG_PFSCFB.PFSCM
+        AND BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;=
+        #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICEB,
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 ) AS DAYRQ,
+        round( sum(
+        JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC = JJSJ_GNJG_PFSCFB.PFSCM
+        AND
+        BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;= #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICEC
+        WHERE
+        MONTHPRICE.MAXRQ = DAYPRICEB.DAYRQ
+        AND MONTHPRICE.MINRQ =
+        DAYPRICEC.DAYRQ ORDER by RQ
+
+
+    </select>
+
+
+    <!-- 根据日数据统计年数据 -->
+    <select id="getYearAppleTradeMarketPrice" parameterType="map"
+            resultType="map">
+        SELECT
+        MONTHPRICE.*,
+        DAYPRICEB.ZJJ AS SPJ,
+        DAYPRICEC.ZJJ AS KPJ
+        FROM
+        (
+        SELECT
+        SUBSTR( DAYRQ, 0, 4 ) AS RQ,
+        round( sum( ZJJ ) / count( * ), 2 )
+        AS ZJJ,
+        MAX( ZJJ ) AS ZGJ,
+        MIN( ZJJ ) AS ZDJ,
+        MAX( DAYRQ ) AS MAXRQ,
+        MIN(
+        DAYRQ ) AS MINRQ
+        FROM
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 ) AS
+        DAYRQ,
+        round( sum( JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC =
+        JJSJ_GNJG_PFSCFB.PFSCM
+        AND BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;=
+        #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICE
+        GROUP BY
+        SUBSTR(
+        DAYRQ, 0, 4 )
+        ) MONTHPRICE,
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )
+        AS DAYRQ,
+        round( sum( JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC =
+        JJSJ_GNJG_PFSCFB.PFSCM
+        AND BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;=
+        #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICEB,
+        (
+        SELECT
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 ) AS DAYRQ,
+        round( sum(
+        JJSJ_GNJG_PFJG.ZJJ ) / count( * ), 2 ) AS ZJJ
+        FROM
+        JJSJ_GNJG_PFSCFB,
+        JJSJ_GNJG_PFJG
+        WHERE
+        JJSJ_GNJG_PFJG.PFSCJC = JJSJ_GNJG_PFSCFB.PFSCM
+        AND
+        BJRQ &gt;= #{beginDate}
+        AND BJRQ &lt;= #{endDate}
+        <if test=" districts != '' ">
+            AND JJSJ_GNJG_PFSCFB.SF = #{districts}
+        </if>
+        <if test=" fruitCode != '' ">
+            AND JJSJ_GNJG_PFJG.NCPDM = #{fruitCode}
+        </if>
+        GROUP BY
+        SUBSTR( JJSJ_GNJG_PFJG.BJRQ, 0, 10 )) DAYPRICEC
+        WHERE
+        MONTHPRICE.MAXRQ = DAYPRICEB.DAYRQ
+        AND MONTHPRICE.MINRQ =
+        DAYPRICEC.DAYRQ ORDER by RQ
+    </select>
+
+    <select id="getMarketAndPrice" resultType="com.inspur.ggpd.data.onemap.data.PropertiesEntity">
+        SELECT A.ZJJ, A.PFSCJC, B.JD, B.WD
+        FROM (select round(sum(ZJJ) / count(1), 2) ZJJ, PFSCJC
+              from JJSJ_GNJG_PFJG
+              WHERE BJRQ &gt;= #{beginDate}
+                AND BJRQ &lt;= #{endDate}
+                AND NCPDM = #{fruitCode}
+              GROUP BY PFSCJC) A
+                 LEFT JOIN JJSJ_GNJG_PFSCFB B ON A.PFSCJC = B.PFSCM
+    </select>
+
+    <select id="getCurrentDate" resultType="string">
+        SELECT * FROM (SELECT SUBSTR(BJRQ,1,10) BJRQ FROM JJSJ_GNJG_PFJG ORDER BY BJRQ DESC) WHERE ROWNUM &lt;=1
+    </select>
+    
+</mapper>

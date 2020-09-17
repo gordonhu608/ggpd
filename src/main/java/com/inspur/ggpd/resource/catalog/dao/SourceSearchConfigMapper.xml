@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.resource.catalog.dao.SourceSearchConfigMapper">
+    <select id="getByTableCode" resultType="com.inspur.ggpd.resource.catalog.data.SourceSearchConfig">
+        SELECT ID,
+               TABLE_CODE,
+               AREA_FIELD,
+               AREA_SHOW_FLAG,
+               TIME_FIELD,
+               TIME_SHOW_FLAG,
+               KEYWORD_FIELD,
+               KEYWORD_SHOW_FLAG,
+               ORDER_FIELD1,
+               ORDER_DIR1,
+               ORDER_FIELD2,
+               ORDER_DIR2,
+               ORDER_FIELD3,
+               ORDER_DIR3,
+               ORDER_FIELD4,
+               ORDER_DIR4
+        FROM SOURCE_SEARCH_CONFIG
+        WHERE TABLE_CODE = #{tableCode}
+    </select>
+</mapper>

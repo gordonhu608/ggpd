@@ -1,0 +1,244 @@
+/* 以下适配设置是针对本系统设置的特定值  不通用  */
+@media screen and (width: 1200px) {
+	html {
+		font-size: 100px;
+		min-width: 100%;
+	}
+}
+
+@media screen and (min-width: 899px) {
+	html {
+		font-size: 74.96339678px !important;
+	}
+}
+
+@media screen and (min-width: 1124px) {
+	html {
+		font-size: 93.70424597px !important;
+	}
+}
+
+@media screen and (min-width: 1200px) {
+	html {
+		font-size: 100px !important;
+	}
+}
+
+@media screen and (min-width: 1265px) {
+	html {
+		font-size: 105.41727672px !important;
+	}
+}
+
+@media screen and (min-width: 1405px) {
+	html {
+		font-size: 117.13030747px !important
+	}
+}
+
+@media screen and (min-width: 1686px) {
+	html {
+		font-size: 140.55636897px !important;
+	}
+}
+
+@media screen and (min-width: 3373px) {
+	html {
+		font-size: 281.11273792px !important;
+	}
+}
+
+html {
+    width: 100%;
+}
+
+body {
+	font-family: arial,microsoft yahei,simsun,simhei,sans-serif;
+	font-size: 0.14rem;
+    width: 100%;
+    margin: 0;
+	padding-bottom: 1.08rem;
+}
+
+* {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+}
+
+ul, li {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: #000;
+}
+
+::-webkit-scrollbar {/*������������ʽ*/
+    width: 6px;     /*�߿��ֱ��Ӧ�����������ĳߴ�*/
+    height: 1px;
+}
+
+::-webkit-scrollbar-thumb {/*����������С����*/
+    border-radius: 5px;
+    background: #ccc;
+}
+
+::-webkit-scrollbar-track {/*������������*/
+    border-radius: 5px;
+}
+.container {
+	width: 100%;
+  	border: 1px solid #E1DFDA;
+	border-top: 2px solid #024A84;
+	padding-bottom: 0.7rem;
+}
+
+.crumbs {
+	height: 0.46rem;
+	line-height: 0.46rem;
+	color: #A39F99;
+	background: url(../../img/crumbs_bg.png) no-repeat;
+	background-position: left center;
+	padding-left: 0.24rem;
+}
+
+.crumbs span {
+	color: #333;
+}
+.crumbs span.home{
+	color: #A39F99;
+	cursor: pointer;
+}
+.border-group {
+	margin-top: -2px;
+}
+.border1 {
+	float:left; 
+	width: 5%;
+	border-top: 2px solid #FECB31;
+	margin-left: -16px;
+}
+.border2 {
+	float:left; 
+	width: 5%;
+	border-top: 2px solid #00CD64;
+	margin-left: -16px;
+}
+.border3 {
+	float:left; 
+	width: 5%;
+	border-top: 2px solid #418EE0;
+	margin-left: -16px;
+}
+
+.btn_group {
+	margin-top: -0.1rem;
+	text-align: center;
+}
+
+.btn_tab {
+	color: #000;
+	height: 0.4rem;
+	line-height: 0.4rem;
+	width: 1rem;
+	font-size: 0.18rem;
+	margin-left: -0.05rem;
+	background-color: #F9F8FD;
+	border: none;
+	outline: none;
+	cursor: pointer;
+}
+
+.btn_tab.active,
+.btn_tab:hover {
+    color: #fff;
+    background-color: #005391;
+}
+
+.search_box {
+	width: 100%;
+	height: 0.32rem;
+	padding-right: 0.4rem;
+}
+
+.search {
+	width: 2.32rem;
+	height: 0.32rem;
+	border: 1px solid #ECEAE8;
+	padding-left: 0.1rem;
+	outline: none;
+}
+
+.search_btn {
+	display: inline-block;
+	width: 0.68rem;
+	height: 0.32rem;
+	line-height: 0.32rem;
+	color: #fff;
+	background-color: #FF2B00;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+.search_btn .fa {
+	font-size: 0.16rem;
+	margin: 0.06rem 0.03rem 0 0.1rem;
+}
+
+.newslist {
+	width: 100%;
+	padding: 0 0.4rem;
+	margin-top: 0.1rem;
+}
+
+.newslist > ul li {
+	min-height: 0.65rem;
+    border-bottom: 1px dashed #E2E0DB;
+    line-height: 0.65rem;
+	font-size: 0.18rem;
+	overflow: hidden;
+}
+
+.newslist > ul > li > span:first-child {
+	display: inline-block;
+	width: 0.05rem;
+	height: 0.05rem;
+	border-radius: 0.05rem;
+	background-color: #9A9691;
+	margin-right: 0.1rem;
+}
+
+.newslist > ul > li > span:last-child {
+	color: #9A9691;
+}
+.pagination {
+	margin: 0.2rem 0;
+	text-align: center;
+}
+
+.pagination a, .pagination span {
+	display: inline-block;
+}
+
+img{
+	display: none;
+}
+
+.result_title {
+	font-size: 0.2rem;
+	font-weight: 600;
+}
+
+.result_info {
+	font-size: 0.16rem;
+	line-height: 0.35rem;
+	text-indent: 0.2rem;
+}
+
+.result_time {
+	font-size: 0.14rem;
+	line-height: 0.36rem;
+}

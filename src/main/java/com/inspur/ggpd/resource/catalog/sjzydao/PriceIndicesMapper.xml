@@ -1,0 +1,1235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.resource.catalog.sjzydao.PriceIndicesMapper">
+
+    <select id="getPriceDistribution" parameterType="map" resultType="map">
+        SELECT
+            B.PFSCXM "name",
+            ROUND(A.ZJJ, 1) "value",
+            B.PFSCXM "area",
+            B.JD,
+            B.WD,
+            SUBSTR(A.BJRQ, 1, 10) BJRQ
+        FROM JJSJ_GNJG_PFJG A,JJSJ_GNJG_PFSCFB B
+        WHERE A.PFSCJC = B.PFSCM AND A.NCPDM = 'AF01001001'
+            AND SUBSTR(A.BJRQ, 1, 10) = (SELECT SUBSTR(MAX(BJRQ), 1, 10) FROM JJSJ_GNJG_PFJG WHERE NCPDM = 'AF01001001')
+        ORDER BY ZJJ DESC
+    </select>
+    <!-- 查询旬均价 -->
+    <select id="getAvgByTenDay" parameterType="map" resultType="map">
+    SELECT X.SJ SJ,X.SZ PFJ,Y.SZ1 CSJ,Z.SZ2 JSJ FROM (
+        SELECT SJ, TO_CHAR(ZJJ, 'FM99990.00') SZ
+        FROM (
+            SELECT CASE WHEN 5 >= SUBSTR(p.BJRQ, 9, 2) THEN SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2)||'05'
+                        WHEN SUBSTR(p.BJRQ, 9, 2) > 5 AND 15 >= SUBSTR(p.BJRQ, 9, 2)
+                        THEN SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2)||'15'
+                        WHEN SUBSTR(p.BJRQ, 9, 2) > 15 AND 25 >= SUBSTR(p.BJRQ, 9, 2)
+                        THEN SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2)||'25'
+                        WHEN SUBSTR(p.BJRQ, 9, 2) > 25
+                        THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+            END SJ, AVG(p.ZJJ) ZJJ FROM JJSJ_GNJG_PFSCFB m INNER JOIN JJSJ_GNJG_PFJG p ON m.PFSCM = p.PFSCJC
+            WHERE SUBSTR(p.BJRQ, 1, 4) >= '2012' AND MCPMC = '富士苹果'
+            GROUP BY CASE WHEN 5 >= SUBSTR(p.BJRQ, 9, 2) THEN SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2)||'05'
+                          WHEN SUBSTR(p.BJRQ, 9, 2) > 5 AND 15 >= SUBSTR(p.BJRQ, 9, 2)
+                          THEN SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2)||'15'
+                          WHEN SUBSTR(p.BJRQ, 9, 2) > 15 AND 25 >= SUBSTR(p.BJRQ, 9, 2)
+                          THEN SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2)||'25'
+                          WHEN SUBSTR(p.BJRQ, 9, 2) > 25
+                          THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(p.BJRQ, 1, 4)||SUBSTR(p.BJRQ, 6, 2), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+            END
+        ) WHERE TO_CHAR(SYSDATE, 'YYYYMMDD') > SJ
+    ) X, (
+        SELECT SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ1
+        FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B, JJSJ_GNJG_CPXX C
+        WHERE A.DQID = B.DQID AND A.CPID = C.CPID AND C.CPMS = '苹果' AND TRIM(C.CPLY) = '国家价格信息中心'
+                              AND TRIM(C.CPPJ) = '红富士一级' AND C.CPJGLB IN ('超市价')
+        GROUP BY SJ
+    ) Y, (
+        SELECT SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ2
+        FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B, JJSJ_GNJG_CPXX C
+        WHERE A.DQID = B.DQID AND A.CPID = C.CPID AND C.CPMS = '苹果' AND TRIM(C.CPLY) = '国家价格信息中心'
+                              AND TRIM(C.CPPJ) = '红富士一级' AND C.CPJGLB IN ('集市价')
+        GROUP BY SJ
+    ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+) ORDER BY X.SJ
+    </select>
+
+    <!-- 查询月均价 -->
+    <select id="getAvgByMonth" parameterType="map" resultType="map">
+    SELECT X.SJ SJ, X.SZ PFJ, Y.SZ1 CSJ, Z.SZ2 JSJ FROM (
+        SELECT SUBSTR(BJRQ, 1, 7) SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ FROM (
+            SELECT BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE MCPMC = '富士苹果' GROUP BY BJRQ ORDER BY BJRQ
+        ) A
+        GROUP BY SUBSTR(BJRQ, 1, 7) ORDER BY SJ
+    ) X, (
+        SELECT SUBSTR(SJ, 1, 4)||'-'||SUBSTR(SJ, 5, 2) SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ1
+        FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B, JJSJ_GNJG_CPXX C
+        WHERE A.DQID = B.DQID AND A.CPID = C.CPID AND C.CPMS = '苹果' AND TRIM(C.CPLY) = '国家价格信息中心'
+              AND TRIM(C.CPPJ) = '红富士一级' AND C.CPJGLB IN ('超市价')
+        GROUP BY SUBSTR(SJ, 1, 4)||'-'||SUBSTR(SJ, 5, 2) ORDER BY SJ
+    ) Y, (
+        SELECT SUBSTR(SJ, 1, 4)||'-'||SUBSTR(SJ, 5, 2) SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ2
+        FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B, JJSJ_GNJG_CPXX C
+        WHERE A.DQID = B.DQID AND A.CPID = C.CPID AND C.CPMS = '苹果' AND TRIM(C.CPLY) = '国家价格信息中心'
+              AND TRIM(C.CPPJ) = '红富士一级' AND C.CPJGLB IN ('集市价')
+        GROUP BY SUBSTR(SJ, 1, 4)||'-'||SUBSTR(SJ, 5, 2) ORDER BY SJ
+    ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+    </select>
+
+    <!-- 查询年均价 -->
+    <select id="getAvgByYear" parameterType="map" resultType="map">
+    SELECT X.SJ SJ, X.SZ PFJ, Y.SZ1 CSJ, Z.SZ2 JSJ FROM (
+        SELECT SUBSTR(BJRQ, 1, 4)||'年' SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ FROM (
+            SELECT BJRQ, AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG
+            WHERE TO_CHAR(SYSDATE, 'YYYY') > SUBSTR(BJRQ, 1, 4) AND MCPMC = '富士苹果' GROUP BY BJRQ ORDER BY BJRQ
+        ) A GROUP BY SUBSTR(BJRQ, 1, 4)||'年' ORDER BY SJ
+    ) X, (
+        SELECT SUBSTR(SJ, 1, 4)||'年' SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ1
+        FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B, JJSJ_GNJG_CPXX C
+        WHERE TO_CHAR(SYSDATE, 'YYYY') > SUBSTR(SJ, 1, 4) AND A.DQID = B.DQID AND A.CPID = C.CPID AND C.CPMS = '苹果'
+              AND TRIM(C.CPLY) = '国家价格信息中心' AND TRIM(C.CPPJ) = '红富士一级' AND C.CPJGLB IN ('超市价')
+        GROUP BY SUBSTR(SJ, 1, 4)||'年' ORDER BY SJ
+    ) Y, (
+        SELECT SUBSTR(SJ,1,4)||'年' SJ, TO_CHAR(AVG(A.ZJJ), 'FM99990.00') SZ2
+        FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B, JJSJ_GNJG_CPXX C
+        WHERE TO_CHAR(SYSDATE, 'YYYY') > SUBSTR(SJ, 1, 4) AND A.DQID = B.DQID AND A.CPID = C.CPID AND C.CPMS = '苹果'
+          AND TRIM(C.CPLY) = '国家价格信息中心' AND TRIM(C.CPPJ) = '红富士一级' AND C.CPJGLB IN ('集市价')
+        GROUP BY SUBSTR(SJ, 1, 4)||'年' ORDER BY SJ
+    ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+    </select>
+
+    <!-- 查询进出口信息 -->
+    <select id="getImportAndExportMessage" parameterType="map" resultType="map">
+    SELECT SUBSTR(X.SJ, 1, 4)||'-'||SUBSTR(X.SJ, 5, 2) SJ, X.SF, X.JKEY, X.CKEY,
+           ROUND(X.JKE/10000, 2) DQJKE, X.JKL DQJKL, ROUND(X.CKE/10000, 2) DQCKE, X.CKL DQCKL,
+           ROUND(DECODE(Y.JKE, 0, NULL, NULL, NULL, ROUND((X.JKE - Y.JKE) / Y.JKE, 4)), 4) * 100 JKEHB,
+           ROUND(DECODE(Y.JKL, 0, NULL, NULL, NULL, ROUND((X.JKL - Y.JKL) / Y.JKL, 4)), 4) * 100 JKLHB,
+           ROUND(DECODE(Y.CKE, 0, NULL, NULL, NULL, ROUND((X.CKE - Y.CKE) / Y.CKE, 4)), 4) * 100 CKEHB,
+           ROUND(DECODE(Y.CKL, 0, NULL, NULL, NULL, ROUND((X.CKL - Y.CKL) / Y.CKL, 4)), 4) * 100 CKLHB,
+           ROUND(DECODE(Z.JKE, 0, NULL, NULL, NULL, ROUND((X.JKE - Z.JKE) / Z.JKE, 4)), 4) * 100 JKETB,
+           ROUND(DECODE(Z.JKL, 0, NULL, NULL, NULL, ROUND((X.JKL - Z.JKL) / Z.JKL, 4)), 4) * 100 JKLTB,
+           ROUND(DECODE(Z.CKE, 0, NULL, NULL, NULL, ROUND((X.CKE - Z.CKE) / Z.CKE, 4)), 4) * 100 CKETB,
+           ROUND(DECODE(Z.CKL, 0, NULL, NULL, NULL, ROUND((X.CKL - Z.CKL) / Z.CKL, 4)), 4) * 100 CKLTB
+    FROM (
+        SELECT SUBSTR(A.RQ, 1, 6) SJ, '全国' SF, SUM(DQJKJEY) JKEY, SUM(DQCKJEY) CKEY, SUM(DQJKJEMY) JKE,
+               SUM(DQJKSL) JKL, SUM(DQCKJEMY) CKE, SUM(DQCKSL) CKL
+        FROM JJSJ_GJMY_MYQK A WHERE A.CPID = #{product} GROUP BY SUBSTR(A.RQ, 1, 6) ORDER BY SJ DESC
+    ) X, (
+        SELECT CASE SUBSTR(A.RQ, 5, 2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 4)) + 1))||'01'
+                                                 ELSE TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 6)) + 1)) END SJ,
+             '全国' SF, SUM(DQJKJEMY) JKE, SUM(DQJKSL) JKL, SUM(DQCKJEMY) CKE, SUM(DQCKSL) CKL
+        FROM JJSJ_GJMY_MYQK A WHERE A.CPID = #{product}
+        GROUP BY CASE SUBSTR(A.RQ, 5, 2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 4)) + 1))||'01'
+                                                   ELSE TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 6)) + 1)) END
+        ORDER BY SJ DESC
+    ) Y, (
+        SELECT (SUBSTR(A.RQ, 1, 4) + 1)||SUBSTR(A.RQ, 5, 2) SJ, '全国' SF, SUM(DQJKJEMY) JKE, SUM(DQJKSL) JKL,
+               SUM(DQCKJEMY) CKE, SUM(DQCKSL) CKL
+        FROM JJSJ_GJMY_MYQK A WHERE A.CPID = #{product} GROUP BY (SUBSTR(A.RQ, 1, 4) + 1)||SUBSTR(A.RQ, 5, 2)
+        ORDER BY SJ DESC
+    ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    </select>
+
+    <!-- 查询进出口信息-苹果汁(三种苹果汁相加) -->
+    <select id="getAppleJuiceImportAndExportMessage" parameterType="map" resultType="map">
+    SELECT SUBSTR(X.SJ, 1, 4)||'年'||SUBSTR(X.SJ, 5, 2)||'月' SJ, X.SF, X.JKEY, X.CKEY, ROUND(X.JKE/10000, 2) DQJKE,
+           X.JKL DQJKL, ROUND(X.CKE/10000,2) DQCKE, X.CKL DQCKL,
+           ROUND(DECODE(Y.JKE, 0, NULL, NULL, NULL, ROUND((X.JKE - Y.JKE) / Y.JKE, 4)), 4) * 100 JKEHB,
+           ROUND(DECODE(Y.JKL, 0, NULL, NULL, NULL, ROUND((X.JKL - Y.JKL) / Y.JKL, 4)), 4) * 100 JKLHB,
+           ROUND(DECODE(Y.CKE, 0, NULL, NULL, NULL, ROUND((X.CKE - Y.CKE) / Y.CKE, 4)), 4) * 100 CKEHB,
+           ROUND(DECODE(Y.CKL, 0, NULL, NULL, NULL, ROUND((X.CKL - Y.CKL) / Y.CKL, 4)), 4) * 100 CKLHB,
+           ROUND(DECODE(Z.JKE, 0, NULL, NULL, NULL, ROUND((X.JKE - Z.JKE) / Z.JKE, 4)), 4) * 100 JKETB,
+           ROUND(DECODE(Z.JKL, 0, NULL, NULL, NULL, ROUND((X.JKL - Z.JKL) / Z.JKL, 4)), 4) * 100 JKLTB,
+           ROUND(DECODE(Z.CKE, 0, NULL, NULL, NULL, ROUND((X.CKE - Z.CKE) / Z.CKE, 4)), 4) * 100 CKETB,
+           ROUND(DECODE(Z.CKL, 0, NULL, NULL, NULL, ROUND((X.CKL - Z.CKL) / Z.CKL, 4)), 4) * 100 CKLTB
+    FROM (
+        SELECT SUBSTR(A.RQ, 1, 6) SJ, '全国' SF, SUM(DQJKJEY) JKEY, SUM(DQCKJEY) CKEY, SUM(DQJKJEMY) JKE,
+               SUM(DQJKSL) JKL, SUM(DQCKJEMY) CKE, SUM(DQCKSL) CKL
+        FROM JJSJ_GJMY_MYQK A WHERE A.CPID in ('20097100','20097000','20097900') GROUP BY SUBSTR(A.RQ, 1, 6) ORDER BY SJ DESC
+    ) X, (
+        SELECT CASE SUBSTR(A.RQ, 5, 2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 4)) + 1))||'01'
+                                                 ELSE TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 6)) + 1)) END SJ,
+             '全国' SF, SUM(DQJKJEMY) JKE, SUM(DQJKSL) JKL, SUM(DQCKJEMY) CKE, SUM(DQCKSL) CKL
+        FROM JJSJ_GJMY_MYQK A WHERE A.CPID in ('20097100','20097000','20097900')
+        GROUP BY CASE SUBSTR(A.RQ, 5, 2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 4)) + 1))||'01'
+                                                   ELSE TO_CHAR((TO_NUMBER(SUBSTR(A.RQ, 1, 6)) + 1)) END
+        ORDER BY SJ DESC
+    ) Y, (
+        SELECT (SUBSTR(A.RQ, 1, 4) + 1)||SUBSTR(A.RQ, 5, 2) SJ, '全国' SF, SUM(DQJKJEMY) JKE, SUM(DQJKSL) JKL,
+               SUM(DQCKJEMY) CKE, SUM(DQCKSL) CKL
+        FROM JJSJ_GJMY_MYQK A WHERE A.CPID in ('20097100','20097000','20097900') GROUP BY (SUBSTR(A.RQ, 1, 4) + 1)||SUBSTR(A.RQ, 5, 2)
+        ORDER BY SJ DESC
+    ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    </select>
+
+    <!-- 查询200指数日度数据 -->
+    <select id="twoHundredIndexByDay" parameterType="map" resultType="map">
+        SELECT D.SJ SJ, A.ZSZ APPLE, F.ZSZ FRUIT, T.ZSZ TOTAL FROM (
+            SELECT DISTINCT SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2)||SUBSTR(RQ, 9, 2) SJ FROM JJSJ_GNJG_JGZS
+            WHERE SUBSTR(RQ, 1, 4) >= '2016'
+        ) D LEFT JOIN (
+            SELECT SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2)||SUBSTR(RQ, 9, 2) SJ, ZSZ FROM JJSJ_GNJG_JGZS
+            WHERE ZSMC = '富士苹果'
+        ) A ON A.SJ = D.SJ LEFT JOIN (
+            SELECT SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2)||SUBSTR(RQ, 9, 2) SJ, ZSZ FROM JJSJ_GNJG_JGZS
+            WHERE ZSMC = '水果'
+        ) F ON D.SJ = F.SJ LEFT JOIN (
+            SELECT SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2)||SUBSTR(RQ, 9, 2) SJ, ZSZ FROM JJSJ_GNJG_JGZS
+            WHERE ZSMC = '农产品200指数'
+        ) T ON D.SJ = T.SJ ORDER BY D.SJ
+    </select>
+
+    <!-- 查询200指数周度数据 -->
+    <select id="twoHundredIndexByWeek" parameterType="map" resultType="map">
+        SELECT W.SJ, A.HB APPLE_HB, A.TB APPLE_TB, F.HB FRUIT_HB, F.TB FRUIT_TB, T.HB TOTAL_HB, T.TB TOTAL_TB FROM (
+            SELECT DISTINCT SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'),'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ,
+                   TRUNC(TO_DATE(SUBSTR(RQ, 1, 10),'YYYY-MM-DD'),'IW') MZY FROM JJSJ_GNJG_JGZS
+            WHERE SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ, 1, 10), 'YYYY-MM-DD'), 'IYYYIW'), 1, 4) >= '2016'
+        ) W LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ , 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ , 4) * 100 TB FROM (
+                SELECT ROUND(AVG(ZSZ), 2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'),'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_JGZS WHERE ZSMC = '富士苹果'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(ZSZ), 2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_JGZS WHERE ZSMC = '富士苹果'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(ZSZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_JGZS WHERE ZSMC = '富士苹果'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) A ON W.SJ = A.SJ LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ , 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ , 4) * 100 TB FROM (
+                SELECT ROUND(AVG(ZSZ), 2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'),'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_JGZS WHERE ZSMC = '水果'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(ZSZ), 2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_JGZS WHERE ZSMC = '水果'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(ZSZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_JGZS WHERE ZSMC = '水果'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) F ON W.SJ = F.SJ LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ , 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ , 4) * 100 TB FROM (
+                SELECT ROUND(AVG(ZSZ), 2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'),'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_JGZS WHERE ZSMC = '农产品200指数'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(ZSZ), 2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_JGZS WHERE ZSMC = '农产品200指数'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(ZSZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_JGZS WHERE ZSMC = '农产品200指数'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(RQ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) T ON W.SJ = T.SJ ORDER BY W.MZY
+    </select>
+
+    <!-- 查询200指数月度数据 -->
+    <select id="twoHundredIndexByMonth" parameterType="map" resultType="map">
+    SELECT M.SJ, A.HB APPLE_HB, A.TB APPLE_TB, F.HB FRUIT_HB, F.TB FRUIT_TB, T.HB TOTAL_HB, T.TB TOTAL_TB FROM (
+        SELECT DISTINCT SUBSTR(RQ, 1, 7) SJ FROM JJSJ_GNJG_JGZS WHERE SUBSTR(RQ, 1, 4) >= '2016'
+    ) M LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT SUBSTR(RQ, 1, 7) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS WHERE ZSMC = '富士苹果'
+            GROUP BY SUBSTR(RQ,1,7)
+        ) X, (
+            SELECT CASE SUBSTR(RQ,6,2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4)) + 1))||'-'||SUBSTR('01',1,2)
+            ELSE TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4))))||'-'||SUBSTR(TO_CHAR((TO_NUMBER('1'||SUBSTR(RQ,6,2)) + 1)),2,2)
+            END SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS WHERE ZSMC = '富士苹果'
+            GROUP BY CASE SUBSTR(RQ,6,2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4)) + 1))||'-'||SUBSTR('01',1,2)
+            ELSE TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4))))||'-'||SUBSTR(TO_CHAR((TO_NUMBER('1'||SUBSTR(RQ,6,2)) + 1)),2,2)
+            END
+        ) Y, (
+            SELECT (SUBSTR(RQ, 1, 4) + 1)||SUBSTR(RQ, 5, 3) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+            WHERE ZSMC = '富士苹果' GROUP BY (SUBSTR(RQ,1,4) + 1)||SUBSTR(RQ, 5, 3)
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) A ON M.SJ = A.SJ LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT SUBSTR(RQ, 1, 7) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS WHERE ZSMC = '水果'
+            GROUP BY SUBSTR(RQ,1,7)
+        ) X, (
+            SELECT CASE SUBSTR(RQ,6,2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4)) + 1))||'-'||SUBSTR('01',1,2)
+            ELSE TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4))))||'-'||SUBSTR(TO_CHAR((TO_NUMBER('1'||SUBSTR(RQ,6,2)) + 1)),2,2)
+            END SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS WHERE ZSMC = '水果'
+            GROUP BY CASE SUBSTR(RQ,6,2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4)) + 1))||'-'||SUBSTR('01',1,2)
+            ELSE TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4))))||'-'||SUBSTR(TO_CHAR((TO_NUMBER('1'||SUBSTR(RQ,6,2)) + 1)),2,2)
+            END
+        ) Y, (
+            SELECT (SUBSTR(RQ, 1, 4) + 1)||SUBSTR(RQ, 5, 3) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+            WHERE ZSMC = '水果' GROUP BY (SUBSTR(RQ,1,4) + 1)||SUBSTR(RQ, 5, 3)
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) F ON M.SJ = F.SJ LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT SUBSTR(RQ, 1, 7) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS WHERE ZSMC = '农产品200指数'
+            GROUP BY SUBSTR(RQ,1,7)
+        ) X, (
+            SELECT CASE SUBSTR(RQ,6,2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4)) + 1))||'-'||SUBSTR('01',1,2)
+            ELSE TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4))))||'-'||SUBSTR(TO_CHAR((TO_NUMBER('1'||SUBSTR(RQ,6,2)) + 1)),2,2)
+            END SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS WHERE ZSMC = '农产品200指数'
+            GROUP BY CASE SUBSTR(RQ,6,2) WHEN '12' THEN TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4)) + 1))||'-'||SUBSTR('01',1,2)
+            ELSE TO_CHAR((TO_NUMBER(SUBSTR(RQ,1,4))))||'-'||SUBSTR(TO_CHAR((TO_NUMBER('1'||SUBSTR(RQ,6,2)) + 1)),2,2)
+            END
+        ) Y, (
+            SELECT (SUBSTR(RQ, 1, 4) + 1)||SUBSTR(RQ, 5, 3) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+            WHERE ZSMC = '农产品200指数' GROUP BY (SUBSTR(RQ,1,4) + 1)||SUBSTR(RQ, 5, 3)
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) T ON M.SJ = T.SJ ORDER BY M.SJ
+    </select>
+
+    <!-- 查询最新两百指数信息 -->
+    <select id="currentTwoHundredIndexByDay" parameterType="map" resultType="map">
+        SELECT
+            A.RQ SJ,A.ZSMC,A.ZSLX,
+            A.ZSZ ZSZ,
+            B.ZSZ LZSZ,
+            A.ZSZ - B.ZSZ ZL,
+            ROUND((A.ZSZ - B.ZSZ)/B.ZSZ,4)*100 ZJF
+        FROM
+        (
+         SELECT * FROM JJSJ_GNJG_JGZS
+          WHERE TO_DATE(SUBSTR(RQ,1,10),'YYYY-MM-DD')
+                  =(SELECT MAX(TO_DATE(SUBSTR(RQ,1,10),'YYYY-MM-DD'))
+                            FROM JJSJ_GNJG_JGZS WHERE ZSMC IN('富士苹果','水果','农产品200指数'))
+              AND ZSMC IN ('富士苹果','水果','农产品200指数')
+      ) A,
+        (
+          SELECT * FROM JJSJ_GNJG_JGZS
+          WHERE TO_DATE(SUBSTR(RQ,1,10),'YYYY-MM-DD')
+                  =(SELECT MAX(TO_DATE(SUBSTR(RQ,1,10),'YYYY-MM-DD')) - 1
+                            FROM JJSJ_GNJG_JGZS WHERE ZSMC IN('富士苹果','水果','农产品200指数'))
+              AND ZSMC IN ('富士苹果','水果','农产品200指数')
+      ) B
+        WHERE TO_DATE(SUBSTR(A.RQ,1,10),'YYYY-MM-DD') = TO_DATE(SUBSTR(B.RQ,1,10),'YYYY-MM-DD') + 1
+          AND A.ZSLX = B.ZSLX
+    </select>
+
+    <!-- 查询最新运城指数 -->
+    <select id="currentYunChengIndexByDay" parameterType="map" resultType="map">
+     SELECT
+      A.SJ,A.ZSID ZSLX,A.ZSMC,
+        A.SZ ZSZ,
+        B.SZ LZSZ,
+        A.SZ - B.SZ ZL,
+        ROUND((A.SZ - B.SZ)/B.SZ,4)*100 ZJF
+    FROM
+    (
+     SELECT * FROM JJSJ_GNJG_YCZS
+      WHERE TO_DATE(SUBSTR(SJ,1,10),'YYYY-MM-DD')
+              =(SELECT MAX(TO_DATE(SUBSTR(SJ,1,10),'YYYY-MM-DD'))
+                        FROM JJSJ_GNJG_YCZS WHERE ZSMC IN('纸袋75指数','纸加膜80及85指数','膜袋80及85指数','纸袋80及85指数'))
+          AND ZSMC IN ('纸袋75指数','纸加膜80及85指数','膜袋80及85指数','纸袋80及85指数')
+  ) A,
+    (
+      SELECT * FROM JJSJ_GNJG_YCZS
+      WHERE TO_DATE(SUBSTR(SJ,1,10),'YYYY-MM-DD')
+              =(SELECT MAX(TO_DATE(SUBSTR(SJ,1,10),'YYYY-MM-DD')) - 1
+                        FROM JJSJ_GNJG_YCZS WHERE ZSMC IN('纸袋75指数','纸加膜80及85指数','膜袋80及85指数','纸袋80及85指数'))
+          AND ZSMC IN ('纸袋75指数','纸加膜80及85指数','膜袋80及85指数','纸袋80及85指数')
+  ) B
+    WHERE A.ZSID = B.ZSID
+      AND TO_DATE(SUBSTR(A.SJ,1,10),'YYYY-MM-DD') = TO_DATE(SUBSTR(B.SJ,1,10),'YYYY-MM-DD') + 1
+    </select>
+
+    <!-- 查询运城指数日度数据 -->
+    <select id="yunChengIndexByDay" parameterType="map" resultType="map">
+        SELECT D.SJ, P75.ZSZ P75, P80.ZSZ P80, M80.ZSZ M80, PM80.ZSZ PM80 FROM (
+            SELECT DISTINCT TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD') SJ FROM JJSJ_GNJG_YCZS
+        ) D LEFT JOIN (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0020' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD')
+        ) P75 ON D.SJ = P75.SJ LEFT JOIN (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0021' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD')
+        ) P80 ON D.SJ = P80.SJ LEFT JOIN (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0019' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD')
+        ) M80 ON D.SJ = M80.SJ LEFT JOIN (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0018' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY/MM/DD'), 'YYYYMMDD')
+        ) PM80 ON D.SJ = PM80.SJ ORDER BY D.SJ
+    </select>
+
+    <!-- 查询运城指数周度数据 -->
+    <select id="yunChengIndexByWeek" parameterType="map" resultType="map">
+        SELECT W.SJ, P75.HB P75_HB, P75.TB P75_TB, P80.HB P80_HB, P80.TB P80_TB, M80.HB M80_HB, M80.TB M80_TB,
+               PM80.HB PM80_HB, PM80.TB PM80_TB FROM (
+            SELECT DISTINCT SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ,
+                            TRUNC(TO_DATE(SUBSTR(SJ, 1, 10), 'YYYY-MM-DD'), 'IW') MZY FROM JJSJ_GNJG_YCZS
+        ) W LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0020'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0020'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(SZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0020'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) P75 ON W.SJ = P75.SJ LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0021'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0021'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(SZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0021'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) P80 ON W.SJ = P80.SJ LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0019'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0019'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(SZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0019'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) M80 ON W.SJ = M80.SJ LEFT JOIN (
+            SELECT X.SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0018'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) X, (
+                SELECT ROUND(AVG(SZ),2) ZSZ,
+                       SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0018'
+                GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD')+7, 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+            ) Y, (
+                SELECT (SUBSTR(TEMP.SJ, 1, 4) + 1)||SUBSTR(TEMP.SJ, 5) SJ, TEMP.ZSZ ZSZ FROM (
+                    SELECT ROUND(AVG(SZ),2) ZSZ,
+                           SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周' SJ
+                    FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0018'
+                    GROUP BY SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),1,4)||'年第'||TO_NUMBER(SUBSTR(TO_CHAR(TO_DATE(SUBSTR(SJ,1,10), 'YYYY-MM-DD'), 'IYYYIW'),5,6))||'周'
+                ) TEMP
+            ) Z WHERE X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+)
+        ) PM80 ON W.SJ = PM80.SJ ORDER BY W.MZY
+    </select>
+
+    <!-- 查询运城指数月度数据 -->
+    <select id="yunChengIndexByMonth" parameterType="map" resultType="map">
+    SELECT M.SJ, P75.HB P75_HB, P75.TB P75_TB, P80.HB P80_HB, P80.TB P80_TB, M80.HB M80_HB, M80.TB M80_TB,
+           PM80.HB PM80_HB, PM80.TB PM80_TB FROM (
+        SELECT DISTINCT TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM') SJ FROM JJSJ_GNJG_YCZS
+    ) M LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0020' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM')
+        ) X, (
+            SELECT CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                   ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END SJ,
+                   ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0020'
+            GROUP BY CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                     ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END
+        ) Y, (
+            SELECT SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM') SJ, ROUND(AVG(SZ), 2) ZSZ
+            FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0020'
+            GROUP BY SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM')
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) P75 ON M.SJ = P75.SJ LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0021' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM')
+        ) X, (
+            SELECT CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                   ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END SJ,
+                   ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0021'
+            GROUP BY CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                     ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END
+        ) Y, (
+            SELECT SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM') SJ, ROUND(AVG(SZ), 2) ZSZ
+            FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0021'
+            GROUP BY SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM')
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) P80 ON M.SJ = P80.SJ LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0019' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM')
+        ) X, (
+            SELECT CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                   ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END SJ,
+                   ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0019'
+            GROUP BY CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                     ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END
+        ) Y, (
+            SELECT SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM') SJ, ROUND(AVG(SZ), 2) ZSZ
+            FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0019'
+            GROUP BY SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM')
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) M80 ON M.SJ = M80.SJ LEFT JOIN (
+        SELECT X.SJ SJ, ROUND((X.ZSZ - Y.ZSZ) / Y.ZSZ, 4) * 100 HB, ROUND((X.ZSZ - Z.ZSZ) / Z.ZSZ, 4) * 100 TB FROM (
+            SELECT TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM') SJ, ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS
+            WHERE ZSID = 'AGRI0018' GROUP BY TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), 'YYYY-MM')
+        ) X, (
+            SELECT CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                   ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END SJ,
+                   ROUND(AVG(SZ), 2) ZSZ FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0018'
+            GROUP BY CASE SUBSTR(SJ, 6, 2) WHEN '12' THEN SUBSTR(SJ, 1, 4) + 1||'-01'
+                     ELSE SUBSTR(SJ, 1, 4)||TO_CHAR(ADD_MONTHS(TO_DATE(SJ, 'YYYY-MM-DD'), 1), '-MM') END
+        ) Y, (
+            SELECT SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM') SJ, ROUND(AVG(SZ), 2) ZSZ
+            FROM JJSJ_GNJG_YCZS WHERE ZSID = 'AGRI0018'
+            GROUP BY SUBSTR(SJ, 1, 4) + 1||TO_CHAR(TO_DATE(SJ, 'YYYY-MM-DD'), '-MM')
+        ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ
+    ) PM80 ON M.SJ = PM80.SJ ORDER BY M.SJ
+    </select>
+
+    <select id="queryOriginalPrice" resultType="java.util.Map">
+    SELECT X.SJ SJ, X.SZ QX, Y.SZ1 HYX, Z.SZ2 LCX FROM (
+        SELECT CASE WHEN 5 >= SUBSTR(A.RQ, 7, 2) THEN SUBSTR(A.RQ, 1, 6)||'05'
+                    WHEN SUBSTR(A.RQ, 7, 2) > 5 AND 15 >= SUBSTR(A.RQ, 7, 2) THEN SUBSTR(A.RQ, 1, 6)||'15'
+                    WHEN SUBSTR(A.RQ, 7, 2) > 15 AND 25 >= SUBSTR(A.RQ, 7, 2) THEN SUBSTR(A.RQ, 1, 6)||'25'
+                    WHEN SUBSTR(A.RQ, 7, 2) > 25
+                    THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(A.RQ, 1, 6), 'YYYYMM'), 1), 'YYYYMM')||'05'
+        END SJ, ROUND(AVG(A.SZ), 2) SZ FROM (
+            SELECT RQ, AVG(SZ) SZ FROM JJSJ_GNJG_TTJG WHERE CPMC = '红富士苹果' AND CSID = '610424'
+            GROUP BY RQ ORDER BY RQ
+        ) A WHERE SUBSTR(RQ, 1, 4) >= '2012' GROUP BY
+        CASE WHEN 5 >= SUBSTR(A.RQ, 7, 2) THEN SUBSTR(A.RQ, 1, 6)||'05'
+             WHEN SUBSTR(A.RQ, 7, 2) > 5 AND 15 >= SUBSTR(A.RQ, 7, 2) THEN SUBSTR(A.RQ, 1, 6)||'15'
+             WHEN SUBSTR(A.RQ, 7, 2) > 15 AND 25 >= SUBSTR(A.RQ, 7, 2) THEN SUBSTR(A.RQ, 1, 6)||'25'
+             WHEN SUBSTR(A.RQ, 7, 2) > 25
+             THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(A.RQ, 1, 6), 'YYYYMM'), 1), 'YYYYMM')||'05'
+        END ORDER BY SJ
+    ) X, (
+        SELECT CASE WHEN 5 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'05'
+                    WHEN SUBSTR(RQ, 7, 2) > 5 AND 15 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'15'
+                    WHEN SUBSTR(RQ, 7, 2) > 15 AND 25 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'25'
+                    WHEN SUBSTR(RQ, 7, 2) > 25
+                    THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(RQ, 1, 6), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+        END SJ, ROUND(AVG(SZ), 2) SZ1 FROM JJSJ_GNJG_TTJG WHERE CPMC = '红富士苹果' AND CSID = '610524'
+        GROUP BY CASE WHEN 5 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'05'
+                      WHEN SUBSTR(RQ, 7, 2) > 5 AND 15 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'15'
+                      WHEN SUBSTR(RQ, 7, 2) > 15 AND 25 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'25'
+                      WHEN SUBSTR(RQ, 7, 2) > 25
+                      THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(RQ, 1, 6), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+        END ORDER BY SJ
+    ) Y, (
+        SELECT CASE WHEN 5 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'05'
+                    WHEN SUBSTR(RQ, 7, 2) > 5 AND 15 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'15'
+                    WHEN SUBSTR(RQ, 7, 2) > 15 AND 25 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'25'
+                    WHEN SUBSTR(RQ, 7, 2) > 25
+                    THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(RQ, 1, 6), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+        END SJ, ROUND(AVG(SZ), 2) SZ2 FROM JJSJ_GNJG_TTJG WHERE CPMC = '红富士苹果' AND CSID = '610629'
+        GROUP BY CASE WHEN 5 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'05'
+                      WHEN SUBSTR(RQ, 7, 2) > 5 AND 15 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'15'
+                      WHEN SUBSTR(RQ, 7, 2) > 15 AND 25 >= SUBSTR(RQ, 7, 2) THEN SUBSTR(RQ, 1, 6)||'25'
+                      WHEN SUBSTR(RQ, 7, 2) > 25
+                      THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(RQ, 1, 6), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+        END ORDER BY SJ
+    ) Z WHERE TO_CHAR(SYSDATE, 'YYYYMMDD') > X.SJ AND X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+) ORDER BY X.SJ
+    </select>
+
+    <select id="queryPrice" resultType="java.util.Map">
+    SELECT X.SJ SJ, X.SZ PFJ, Y.SZ1 CSJ, Z.SZ2 JSJ FROM (
+        SELECT CASE WHEN 5 >= SUBSTR(BJRQ, 9, 2) THEN SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2)||'05'
+        WHEN SUBSTR(BJRQ, 9, 2) > 5 AND 15 >= SUBSTR(BJRQ, 9, 2) THEN SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2)||'15'
+        WHEN SUBSTR(BJRQ, 9, 2) > 15 AND 25 >= SUBSTR(BJRQ, 9, 2) THEN SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2)||'25'
+        WHEN SUBSTR(BJRQ, 9, 2) > 25
+        THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2), 'YYYY-MM'), 1), 'YYYYMM')||'05'
+        END SJ, ROUND(AVG(A.ZJJ),2) SZ FROM (
+        SELECT BJRQ, AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFSCFB m INNER JOIN JJSJ_GNJG_PFJG p ON m.PFSCM = PFSCJC
+        WHERE MCPMC = '富士苹果'
+        <if test="null != city and '' != city">
+            AND m.CS LIKE '%'||#{city}||'%'
+        </if>
+        GROUP BY BJRQ ORDER BY BJRQ
+        ) A WHERE SUBSTR(BJRQ,1,4) >= '2012' GROUP BY
+        CASE WHEN 5 >= SUBSTR(BJRQ, 9, 2) THEN SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2)||'05'
+        WHEN SUBSTR(BJRQ, 9, 2) > 5 AND 15 >= SUBSTR(BJRQ, 9, 2) THEN SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2)||'15'
+        WHEN SUBSTR(BJRQ, 9, 2) > 15 AND 25 >= SUBSTR(BJRQ, 9, 2) THEN SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2)||'25'
+        WHEN SUBSTR(BJRQ, 9, 2) > 25
+        THEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(BJRQ, 1, 4)||SUBSTR(BJRQ, 6, 2), 'YYYY-MM'), 1), 'YYYYMM')||'05' END
+        ORDER BY SJ
+    ) X, (
+        SELECT SJ,ROUND(AVG(ZJJ),2) SZ1 FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B
+        WHERE A.DQID = B.DQID AND A.CPID ='12822014121'
+        <if test="null != city and '' != city">
+            AND B.DQMS LIKE '%'||#{city}||'%'
+        </if>
+        GROUP BY SJ ORDER BY SJ
+    ) Y, (
+        SELECT SJ,ROUND(AVG(ZJJ),2) SZ2 FROM JJSJ_GNJG_JGXX A, JJSJ_GNJG_DQXX B
+        WHERE A.DQID = B.DQID AND A.CPID ='12052014121'
+        <if test="null != city and '' != city">
+            AND B.DQMS LIKE '%'||#{city}||'%'
+        </if>
+        GROUP BY SJ ORDER BY SJ
+    ) Z WHERE TO_CHAR(SYSDATE, 'YYYYMMDD') > X.SJ AND X.SJ = Y.SJ(+) AND X.SJ = Z.SJ(+) ORDER BY X.SJ
+    </select>
+
+    <select id="queryIndex" resultType="java.util.Map">
+    SELECT X.SJ month, X.ZSZ total, Y.ZSZ fruit, Z.ZSZ apple FROM (
+        SELECT SUBSTR(RQ, 1, 7) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+        WHERE TO_CHAR(SYSDATE, 'YYYY-MM') > SUBSTR(RQ, 1, 7) AND ZSMC = '农产品200指数' GROUP BY SUBSTR(RQ, 1, 7)
+    ) X, (
+        SELECT SUBSTR(RQ, 1, 7) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+        WHERE TO_CHAR(SYSDATE, 'YYYY-MM') > SUBSTR(RQ, 1, 7) AND ZSMC = '水果' GROUP BY SUBSTR(RQ, 1, 7)
+    ) Y, (
+        SELECT SUBSTR(RQ, 1, 7) SJ, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+        WHERE TO_CHAR(SYSDATE, 'YYYY-MM') > SUBSTR(RQ, 1, 7) AND ZSMC = '富士苹果' GROUP BY SUBSTR(RQ, 1, 7)
+    ) Z WHERE X.SJ = Y.SJ AND X.SJ = Z.SJ ORDER BY X.SJ
+    </select>
+
+    <select id="currentTwoHundredIndexByMonth" resultType="java.util.Map">
+        SELECT T.ZSMC, T.ZSZ, ROUND(T.ZSZ - L.ZSZ, 2) ZL, ROUND((T.ZSZ - L.ZSZ) * 100 / L.ZSZ, 2) ZJF FROM (
+            SELECT I.ZSMC, I.ZSZ FROM (
+                SELECT MAX(SUBSTR(RQ, 1, 7)) RQ FROM JJSJ_GNJG_JGZS WHERE TO_CHAR(SYSDATE, 'YYYY-MM') > SUBSTR(RQ, 1, 7)
+            ) M LEFT JOIN (
+                SELECT SUBSTR(RQ, 1, 7) RQ, ZSMC, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+                WHERE ZSMC IN('富士苹果','水果','农产品200指数') GROUP BY SUBSTR(RQ, 1, 7), ZSMC
+            ) I ON I.RQ = M.RQ
+        ) T LEFT JOIN (
+            SELECT I.ZSMC, I.ZSZ FROM (
+                SELECT MAX(SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2)) - 1 RQ FROM JJSJ_GNJG_JGZS
+                WHERE TO_CHAR(SYSDATE, 'YYYY-MM') > SUBSTR(RQ, 1, 7)
+            ) M LEFT JOIN (
+                SELECT SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2) RQ, ZSMC, ROUND(AVG(ZSZ), 2) ZSZ FROM JJSJ_GNJG_JGZS
+                WHERE ZSMC IN('富士苹果','水果','农产品200指数') GROUP BY SUBSTR(RQ, 1, 4)||SUBSTR(RQ, 6, 2), ZSMC
+            ) I ON I.RQ = M.RQ
+        ) L ON T.ZSMC = L.ZSMC
+    </select>
+    <!--价格解读数据查询SQL-->
+    <select id="getPriceDecode" resultType="java.util.Map">
+        --价格解读
+        SELECT
+        QGPFJ,
+        CASE WHEN QGPFJTB > 0 THEN '上涨'||ABS(QGPFJTB) WHEN QGPFJTB &lt; 0 THEN '下跌'||ABS(QGPFJTB) ELSE '持平' END AS QGPFJTB,
+        CASE WHEN QGPFJHB > 0 THEN '上涨'||ABS(QGPFJHB) WHEN QGPFJHB &lt; 0 THEN '下跌'||ABS(QGPFJHB) ELSE '持平' END AS QGPFJHB,
+        SXPFJ,
+        CASE WHEN SXPFJTB > 0 THEN '上涨'||ABS(SXPFJTB) WHEN SXPFJTB &lt; 0 THEN '下跌'||ABS(SXPFJTB) ELSE '持平' END AS SXPFJTB,
+        CASE WHEN SXPFJHB > 0 THEN '上涨'||ABS(SXPFJHB) WHEN SXPFJHB &lt; 0 THEN '下跌'||ABS(SXPFJHB) ELSE '持平' END AS SXPFJHB,
+        SDPFJ,
+        CASE WHEN SDPFJTB > 0 THEN '上涨'||ABS(SDPFJTB) WHEN SDPFJTB &lt; 0 THEN '下跌'||ABS(SDPFJTB) ELSE '持平' END AS SDPFJTB,
+        CASE WHEN SDPFJHB > 0 THEN '上涨'||ABS(SDPFJHB) WHEN SDPFJHB &lt; 0 THEN '下跌'||ABS(SDPFJHB) ELSE '持平' END AS SDPFJHB,
+        PFJGZFSFTOP1,
+        PFJGZFTOP1,
+        PFJGZFSFTOP2,
+        PFJGZFTOP2,
+        PFJGZFSFTOP3,
+        PFJGZFTOP3,
+        PFJGDFSFTOP1,
+        PFJGDFTOP1,
+        PFJGDFSFTOP2,
+        PFJGDFTOP2,
+        PFJGDFSFTOP3,
+        PFJGDFTOP3,
+        QGJSJ,
+        CASE WHEN QGJSJTB > 0 THEN '上涨'||ABS(QGJSJTB) WHEN QGJSJTB &lt; 0 THEN '下跌'||ABS(QGJSJTB) ELSE '持平' END AS QGJSJTB,
+        CASE WHEN QGJSJHB > 0 THEN '上涨'||ABS(QGJSJHB) WHEN QGJSJHB &lt; 0 THEN '下跌'||ABS(QGJSJHB) ELSE '持平' END AS QGJSJHB,
+        SXJSJ,
+        CASE WHEN SXJSJTB > 0 THEN '上涨'||ABS(SXJSJTB) WHEN SXJSJTB &lt; 0 THEN '下跌'||ABS(SXJSJTB) ELSE '持平' END AS SXJSJTB,
+        CASE WHEN SXJSJHB > 0 THEN '上涨'||ABS(SXJSJHB) WHEN SXJSJHB &lt; 0 THEN '下跌'||ABS(SXJSJHB) ELSE '持平' END AS SXJSJHB,
+        SDJSJ,
+        CASE WHEN SDJSJTB > 0 THEN '上涨'||ABS(SDJSJTB) WHEN SDJSJTB &lt; 0 THEN '下跌'||ABS(SDJSJTB) ELSE '持平' END AS SDJSJTB,
+        CASE WHEN SDJSJHB > 0 THEN '上涨'||ABS(SDJSJHB) WHEN SDJSJHB &lt; 0 THEN '下跌'||ABS(SDJSJHB) ELSE '持平' END AS SDJSJHB,
+        JSJGZFSFTOP1,
+        JSJGZFTOP1,
+        JSJGZFSFTOP2,
+        JSJGZFTOP2,
+        JSJGZFSFTOP3,
+        JSJGZFTOP3,
+        JSJGDFSFTOP1,
+        JSJGDFTOP1,
+        JSJGDFSFTOP2,
+        JSJGDFTOP2,
+        JSJGDFSFTOP3,
+        JSJGDFTOP3,
+        QGCSJ,
+        CASE WHEN QGCSJTB > 0 THEN '上涨'||ABS(QGCSJTB) WHEN QGCSJTB &lt; 0 THEN '下跌'||ABS(QGCSJTB) ELSE '持平' END AS QGCSJTB,
+        CASE WHEN QGCSJHB > 0 THEN '上涨'||ABS(QGCSJHB) WHEN QGCSJHB &lt; 0 THEN '下跌'||ABS(QGCSJHB) ELSE '持平' END AS QGCSJHB,
+        SXCSJ,
+        CASE WHEN SXCSJTB > 0 THEN '上涨'||ABS(SXCSJTB) WHEN SXCSJTB &lt; 0 THEN '下跌'||ABS(SXCSJTB) ELSE '持平' END AS SXCSJTB,
+        CASE WHEN SXCSJHB > 0 THEN '上涨'||ABS(SXCSJHB) WHEN SXCSJHB &lt; 0 THEN '下跌'||ABS(SXCSJHB) ELSE '持平' END AS SXCSJHB,
+        SDCSJ,
+        CASE WHEN SDCSJTB > 0 THEN '上涨'||ABS(SDCSJTB) WHEN SDCSJTB &lt; 0 THEN '下跌'||ABS(SDCSJTB) ELSE '持平' END AS SDCSJTB,
+        CASE WHEN SDCSJHB > 0 THEN '上涨'||ABS(SDCSJHB) WHEN SDCSJHB &lt; 0 THEN '下跌'||ABS(SDCSJHB) ELSE '持平' END AS SDCSJHB,
+        CSJGZFSFTOP1,
+        CSJGZFTOP1,
+        CSJGZFSFTOP2,
+        CSJGZFTOP2,
+        CSJGZFSFTOP3,
+        CSJGZFTOP3,
+        CSJGDFSFTOP1,
+        CSJGDFTOP1,
+        CSJGDFSFTOP2,
+        CSJGDFTOP2,
+        CSJGDFSFTOP3,
+        CSJGDFTOP3,
+        KPJ,
+        SPJ,
+        ZGJ,
+        ZDJ,
+        CJL,
+        CCL,
+        CASE WHEN CJLHB > 0 THEN '上涨'||ABS(CJLHB) WHEN CJLHB &lt; 0 THEN '下跌'||ABS(CJLHB) ELSE '持平' END AS CJLHB,
+        CASE WHEN CCLHB > 0 THEN '上涨'||ABS(CCLHB) WHEN CCLHB &lt; 0 THEN '下跌'||ABS(CCLHB) ELSE '持平' END AS CCLHB
+        FROM
+        --全国批发价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS QGPFJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS QGPFJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS QGPFJHB
+        FROM
+        (SELECT SUBSTR(BJRQ, 1, 7) BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE SUBSTR(BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') GROUP BY SUBSTR(BJRQ, 1, 7)) A,
+        (SELECT SUBSTR(BJRQ, 1, 7) BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE SUBSTR(BJRQ, 1, 7) = TO_CHAR(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'),'yyyy-mm') GROUP BY SUBSTR(BJRQ, 1, 7)) B,
+        (SELECT SUBSTR(BJRQ, 1, 7) BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE SUBSTR(BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') GROUP BY SUBSTR(BJRQ, 1, 7)) C),
+        --陕西批发价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS SXPFJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS SXPFJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS SXPFJHB
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM AND Y.SF = '陕西' GROUP BY SUBSTR(X.BJRQ, 1, 7)) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM AND Y.SF = '陕西' GROUP BY SUBSTR(X.BJRQ, 1, 7)) B,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM AND Y.SF = '陕西' GROUP BY SUBSTR(X.BJRQ, 1, 7)) C),
+        --山东批发价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS SDPFJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS SDPFJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS SDPFJHB
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM AND Y.SF = '山东' GROUP BY SUBSTR(X.BJRQ, 1, 7)) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM AND Y.SF = '山东' GROUP BY SUBSTR(X.BJRQ, 1, 7)) B,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM AND Y.SF = '山东' GROUP BY SUBSTR(X.BJRQ, 1, 7)) C),
+        --批发价格涨幅TOP1省份。
+        (SELECT
+        NO,
+        PFJGZFSF AS PFJGZFSFTOP1,
+        '涨幅'||PFJGZFBL AS PFJGZFTOP1
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        PFJGZFSF,
+        PFJGZFBL
+        FROM
+        (SELECT
+        A.SF AS PFJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS PFJGZFBL
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) C
+        WHERE A.SF = C.SF ORDER BY PFJGZFBL DESC))
+        WHERE NO = 1),
+        --批发价格涨幅TOP2省份。
+        (SELECT
+        NO,
+        PFJGZFSF AS PFJGZFSFTOP2,
+        '涨幅'||PFJGZFBL AS PFJGZFTOP2
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        PFJGZFSF,
+        PFJGZFBL
+        FROM
+        (SELECT
+        A.SF AS PFJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS PFJGZFBL
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) C
+        WHERE A.SF = C.SF ORDER BY PFJGZFBL DESC))
+        WHERE NO = 2),
+        --批发价格涨幅TOP3省份。
+        (SELECT
+        NO,
+        PFJGZFSF AS PFJGZFSFTOP3,
+        '涨幅'||PFJGZFBL AS PFJGZFTOP3
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        PFJGZFSF,
+        PFJGZFBL
+        FROM
+        (SELECT
+        A.SF AS PFJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS PFJGZFBL
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) C
+        WHERE A.SF = C.SF ORDER BY PFJGZFBL DESC))
+        WHERE NO = 3),
+        --批发价格跌幅TOP1省份。
+        (SELECT
+        NO,
+        PFJGZFSF AS PFJGDFSFTOP1,
+        '跌幅'||ABS(PFJGZFBL) AS PFJGDFTOP1
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        PFJGZFSF,
+        PFJGZFBL
+        FROM
+        (SELECT
+        A.SF AS PFJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS PFJGZFBL
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) C
+        WHERE A.SF = C.SF ORDER BY PFJGZFBL ASC))
+        WHERE NO = 1),
+        --批发价格跌幅TOP2省份。
+        (SELECT
+        NO,
+        PFJGZFSF AS PFJGDFSFTOP2,
+        '跌幅'||ABS(PFJGZFBL) AS PFJGDFTOP2
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        PFJGZFSF,
+        PFJGZFBL
+        FROM
+        (SELECT
+        A.SF AS PFJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS PFJGZFBL
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) C
+        WHERE A.SF = C.SF ORDER BY PFJGZFBL ASC))
+        WHERE NO = 2),
+        --批发价格跌幅TOP3省份。
+        (SELECT
+        NO,
+        PFJGZFSF AS PFJGDFSFTOP3,
+        '跌幅'||ABS(PFJGZFBL) AS PFJGDFTOP3
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        PFJGZFSF,
+        PFJGZFBL
+        FROM
+        (SELECT
+        A.SF AS PFJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS PFJGZFBL
+        FROM
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) A,
+        (SELECT SUBSTR(X.BJRQ, 1, 7) BJRQ,Y.SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_PFJG X,JJSJ_GNJG_PFSCFB Y WHERE SUBSTR(X.BJRQ, 1, 7) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') AND X.PFSCJC = Y.PFSCM GROUP BY SUBSTR(X.BJRQ, 1, 7),SF ORDER BY ZJJ) C
+        WHERE A.SF = C.SF ORDER BY PFJGZFBL ASC))
+        WHERE NO = 3),
+        --12822014121 超市价  12052014121 集市价
+        --全国集市价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS QGJSJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS QGJSJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS QGJSJHB
+        FROM
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) = #{time} AND CPID = '12052014121' GROUP BY SUBSTR(SJ, 1, 6)) A,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND CPID = '12052014121' GROUP BY SUBSTR(SJ, 1, 6)) B,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND CPID = '12052014121' GROUP BY SUBSTR(SJ, 1, 6)) C),
+        --陕西集市价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS SXJSJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS SXJSJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS SXJSJHB
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '陕西' GROUP BY SUBSTR(X.SJ, 1, 6)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND X.CPID = '12052014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '陕西' GROUP BY SUBSTR(X.SJ, 1, 6)) B,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '陕西' GROUP BY SUBSTR(X.SJ, 1, 6)) C),
+        --山东集市价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS SDJSJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS SDJSJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS SDJSJHB
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '山东' GROUP BY SUBSTR(X.SJ, 1, 6)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND X.CPID = '12052014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '山东' GROUP BY SUBSTR(X.SJ, 1, 6)) B,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '山东' GROUP BY SUBSTR(X.SJ, 1, 6)) C),
+        --集市价格涨幅TOP1省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS JSJGZFSFTOP1,
+        '涨幅'||JSJGZFBL AS JSJGZFTOP1
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL DESC))
+        WHERE NO = 1),
+        --集市价格涨幅TOP2省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS JSJGZFSFTOP2,
+        '涨幅'||JSJGZFBL AS JSJGZFTOP2
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL DESC))
+        WHERE NO = 2),
+        --集市价格涨幅TOP3省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS JSJGZFSFTOP3,
+        '涨幅'||JSJGZFBL AS JSJGZFTOP3
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL DESC))
+        WHERE NO = 3),
+        --集市价格跌幅TOP1省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS JSJGDFSFTOP1,
+        '跌幅'||ABS(JSJGZFBL) AS JSJGDFTOP1
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL ASC))
+        WHERE NO = 1),
+        --集市价格跌幅TOP2省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS JSJGDFSFTOP2,
+        '跌幅'||ABS(JSJGZFBL) AS JSJGDFTOP2
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL ASC))
+        WHERE NO = 2),
+        --集市价格跌幅TOP3省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS JSJGDFSFTOP3,
+        '跌幅'||ABS(JSJGZFBL) AS JSJGDFTOP3
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12052014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL ASC))
+        WHERE NO = 3),
+        --全国超市价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS QGCSJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS QGCSJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS QGCSJHB
+        FROM
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) = #{time} AND CPID = '12822014121' GROUP BY SUBSTR(SJ, 1, 6)) A,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND CPID = '12822014121' GROUP BY SUBSTR(SJ, 1, 6)) B,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND CPID = '12822014121' GROUP BY SUBSTR(SJ, 1, 6)) C),
+        --陕西集市价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS SXCSJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS SXCSJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS SXCSJHB
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '陕西' GROUP BY SUBSTR(X.SJ, 1, 6)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND X.CPID = '12822014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '陕西' GROUP BY SUBSTR(X.SJ, 1, 6)) B,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '陕西' GROUP BY SUBSTR(X.SJ, 1, 6)) C),
+        --山东集市价、同比、环比。
+        (SELECT
+        ROUND(A.ZJJ, 2) AS SDCSJ,
+        DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS SDCSJTB,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS SDCSJHB
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '山东' GROUP BY SUBSTR(X.SJ, 1, 6)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND X.CPID = '12822014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '山东' GROUP BY SUBSTR(X.SJ, 1, 6)) B,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID AND TRIM(Y.SF) = '山东' GROUP BY SUBSTR(X.SJ, 1, 6)) C),
+        --集市价格涨幅TOP1省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS CSJGZFSFTOP1,
+        '涨幅'||JSJGZFBL AS CSJGZFTOP1
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL DESC))
+        WHERE NO = 1),
+        --集市价格涨幅TOP2省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS CSJGZFSFTOP2,
+        '涨幅'||JSJGZFBL AS CSJGZFTOP2
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL DESC))
+        WHERE NO = 2),
+        --集市价格涨幅TOP3省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS CSJGZFSFTOP3,
+        '涨幅'||JSJGZFBL AS CSJGZFTOP3
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL DESC))
+        WHERE NO = 3),
+        --集市价格跌幅TOP1省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS CSJGDFSFTOP1,
+        '跌幅'||ABS(JSJGZFBL) AS CSJGDFTOP1
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL ASC))
+        WHERE NO = 1),
+        --集市价格跌幅TOP2省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS CSJGDFSFTOP2,
+        '跌幅'||ABS(JSJGZFBL) AS CSJGDFTOP2
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL ASC))
+        WHERE NO = 2),
+        --集市价格跌幅TOP3省份。
+        (SELECT
+        NO,
+        JSJGZFSF AS CSJGDFSFTOP3,
+        '跌幅'||ABS(JSJGZFBL) AS CSJGDFTOP3
+        FROM
+        (SELECT
+        ROWNUM AS NO,
+        JSJGZFSF,
+        JSJGZFBL
+        FROM
+        (SELECT
+        --ROWNUM AS NO,
+        A.SF AS JSJGZFSF,
+        DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS JSJGZFBL
+        FROM
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = #{time} AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) A,
+        (SELECT SUBSTR(X.SJ, 1, 6) SJ,TRIM(Y.SF) SF,AVG(X.ZJJ) ZJJ FROM JJSJ_GNJG_JGXX X,JJSJ_GNJG_DQXX Y WHERE SUBSTR(X.SJ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND X.CPID = '12822014121' AND X.DQID = Y.DQID GROUP BY SUBSTR(X.SJ, 1, 6),TRIM(Y.SF)) C
+        WHERE A.SF = C.SF ORDER BY JSJGZFBL ASC))
+        WHERE NO = 3),
+        --期货价格数据
+        (SELECT
+        KPJ,
+        SPJ,
+        ZGJ,
+        ZDJ,
+        A.CJL,
+        A.CCL,
+        DECODE(B.CJL,0,0,NULL,0,ROUND((A.CJL - B.CJL)/B.CJL,4))*100 AS CJLHB,
+        DECODE(B.CCL,0,0,NULL,0,ROUND((A.CCL - B.CCL)/B.CCL,4))*100 AS CCLHB
+        FROM
+        (SELECT
+        ROUND(AVG(KPJ),2) KPJ,
+        ROUND(AVG(SPJ),2) SPJ,
+        MAX(ZGJ) ZGJ,
+        MIN(ZDJ) ZDJ,
+        SUM(CJL) CJL,
+        SUM(CCL) CCL
+        FROM JJSJ_GNJG_PGQH
+        WHERE SUBSTR(RQ, 1, 6) = #{time} AND ZBID = '201132'
+        GROUP BY SUBSTR(RQ, 1, 6)) A,
+        (SELECT
+        SUM(CJL) CJL,
+        SUM(CCL) CCL
+        FROM JJSJ_GNJG_PGQH
+        WHERE SUBSTR(RQ, 1, 6) = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM') AND ZBID = '201132'
+        GROUP BY SUBSTR(RQ, 1, 6)) B)
+    </select>
+
+    <!--价格解读echarts图表数据-->
+    <select id="getPriceDecodeChart" resultType="java.util.Map">
+        SELECT
+            X.BJRQ,
+            X.QGPFJ,
+            X.QGPFJTB,
+            X.QGPFJHB,
+            Y.QGJSJ,
+            Y.QGJSJTB,
+            Y.QGJSJHB,
+            Z.QGCSJ,
+            Z.QGCSJTB,
+            Z.QGCSJHB
+        FROM
+        (SELECT
+                A.BJRQ,
+            ROUND(A.ZJJ, 2) AS QGPFJ,
+                DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS QGPFJTB,
+                DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS QGPFJHB
+        FROM
+        (SELECT SUBSTR(BJRQ, 1, 7) BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE SUBSTR(BJRQ, 1, 7) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'yyyymm'), -5),'yyyy-mm') AND TO_CHAR(TO_DATE(#{time}, 'yyyymm'),'yyyy-mm') GROUP BY SUBSTR(BJRQ, 1, 7)) A,
+        (SELECT SUBSTR(BJRQ, 1, 7) BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE SUBSTR(BJRQ, 1, 7) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'), -5),'yyyy-mm') AND TO_CHAR(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'),'yyyy-mm') GROUP BY SUBSTR(BJRQ, 1, 7)) B,
+        (SELECT SUBSTR(BJRQ, 1, 7) BJRQ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_PFJG WHERE SUBSTR(BJRQ, 1, 7) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-6),'YYYY-MM') AND TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYY-MM') GROUP BY SUBSTR(BJRQ, 1, 7)) C
+        WHERE A.BJRQ = SUBSTR(B.BJRQ,1,4)+1||SUBSTR(B.BJRQ,5,7)
+                AND A.BJRQ = to_char(add_months(trunc(to_date(C.BJRQ,'yyyy-MM')),+1),'yyyy-mm')
+        ORDER BY BJRQ) X,
+        (SELECT
+                A.SJ,
+            ROUND(A.ZJJ, 2) AS QGJSJ,
+                DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS QGJSJTB,
+                DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS QGJSJHB
+        FROM
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'YYYYMM'), -5),'YYYYMM') AND #{time} AND CPID = '12052014121' GROUP BY SUBSTR(SJ, 1, 6)) A,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'), -5),'yyyymm') AND SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND CPID = '12052014121' GROUP BY SUBSTR(SJ, 1, 6)) B,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'YYYYMM'), -6),'YYYYMM') AND TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'YYYYMM'), -1),'YYYYMM') AND CPID = '12052014121' GROUP BY SUBSTR(SJ, 1, 6)) C
+        WHERE A.SJ = SUBSTR(B.SJ,1,4)+1||SUBSTR(B.SJ,5,6)
+                AND A.SJ = to_char(add_months(trunc(to_date(C.SJ,'yyyyMM')),+1),'yyyymm')
+        ORDER BY SJ) Y,
+        (SELECT
+                A.SJ AS SJ,
+            ROUND(A.ZJJ, 2) AS QGCSJ,
+                DECODE(B.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - B.ZJJ)/B.ZJJ,4))*100 AS QGCSJTB,
+                DECODE(C.ZJJ,0,0,NULL,0,ROUND((A.ZJJ - C.ZJJ)/C.ZJJ,4))*100 AS QGCSJHB
+        FROM
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'YYYYMM'), -5),'YYYYMM') AND #{time} AND CPID = '12822014121' GROUP BY SUBSTR(SJ, 1, 6)) A,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6), 'yyyymm'), -5),'yyyymm') AND SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6) AND CPID = '12822014121' GROUP BY SUBSTR(SJ, 1, 6)) B,
+        (SELECT SUBSTR(SJ, 1, 6) SJ,AVG(ZJJ) ZJJ FROM JJSJ_GNJG_JGXX WHERE SUBSTR(SJ, 1, 6) BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'YYYYMM'), -6),'YYYYMM') AND TO_CHAR(ADD_MONTHS(TO_DATE(#{time}, 'YYYYMM'), -1),'YYYYMM') AND CPID = '12822014121' GROUP BY SUBSTR(SJ, 1, 6)) C
+        WHERE A.SJ = SUBSTR(B.SJ,1,4)+1||SUBSTR(B.SJ,5,6)
+                AND A.SJ = to_char(add_months(trunc(to_date(C.SJ,'yyyyMM')),+1),'yyyymm')
+        ORDER BY SJ) Z
+        WHERE REPLACE(X.BJRQ,'-','') = Y.SJ
+                AND REPLACE(X.BJRQ,'-','') = Z.SJ
+    </select>
+</mapper>

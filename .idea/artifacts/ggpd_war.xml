@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="ggpd:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>ggpd</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="ggpd.war">
+      <element id="artifact" artifact-name="ggpd:war exploded" />
+    </root>
+  </artifact>
+</component>

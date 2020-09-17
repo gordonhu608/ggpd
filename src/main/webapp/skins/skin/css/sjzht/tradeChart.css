@@ -1,0 +1,17 @@
+.btn-group-color{
+    background-color: white;
+}
+.map_timeline {
+    position: absolute !important;
+    left: 7% !important;
+    right: 3% !important;
+    bottom: 10% !important;
+    width: 80% !important;
+    height: 0.66rem !important;
+    background: rgba(0, 0, 0, 0) !important;
+    /*background-color: red;*/
+    z-index: 999;
+    /*display: inline-flex;
+    align-items: center;
+    justify-content: center;*/
+}

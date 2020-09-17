@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.data.onemap.dao.SjyztMrtjMapper">
+    <select id="queryList" resultType="com.inspur.ggpd.data.onemap.data.SjyztMrtj">
+        SELECT RQ,
+               NB,
+               WB,
+               HLW,
+               WLW,
+               JJ,
+               QX,
+               ZPGL,
+               ZZZY,
+               SCZL,
+               CYZC,
+               CHJG,
+               SJCJ,
+               RK,
+               SJSL,
+               XZSJL,
+               nvl(FJGZL, 0)            FJGZL,
+               ROUND(LJ / 100000000, 2) LJ
+        FROM SJYZT_MRTJ
+        WHERE RQ >= TO_CHAR(TRUNC(SYSDATE - 11), 'yyyy-MM-dd')
+        ORDER BY RQ DESC
+    </select>
+
+    <select id="getThisWeekData" resultType="long">
+        SELECT CASE WHEN SUM(XZSJL) IS NULL THEN 0 ELSE SUM(XZSJL) END
+        FROM SJYZT_MRTJ
+        WHERE to_date(RQ, 'yyyy-mm-dd hh24:mi:ss') >= TRUNC(NEXT_DAY(SYSDATE - 8, 1) + 1)
+          AND to_date(RQ, 'yyyy-mm-dd hh24:mi:ss') <![CDATA[< ]]>TRUNC(NEXT_DAY(SYSDATE - 8, 1) + 7) + 1
+    </select>
+
+    <select id="getThisMonthData" resultType="long">
+        SELECT SUM(XZSJL)
+        FROM SJYZT_MRTJ
+        WHERE TO_CHAR(TO_DATE(RQ, 'yyyy-mm-dd hh24:mi:ss'), 'YYYY-MM') = TO_CHAR(SYSDATE, 'YYYY-MM')
+    </select>
+
+    <select id="getLastMonthTotalData" resultType="long">
+        SELECT LJ
+        FROM SJYZT_MRTJ
+        WHERE RQ = TO_CHAR(last_day(add_months(sysdate, -1)), 'yyyy-mm-dd')
+    </select>
+
+    <select id="getLastYearSameMonthTotalData" resultType="long">
+        SELECT LJ
+        FROM SJYZT_MRTJ
+        WHERE RQ = TO_CHAR(last_day(add_months(sysdate, -12)), 'yyyy-mm-dd')
+    </select>
+
+    <select id="getLastDayTotalData" resultType="long">
+        SELECT LJ
+        FROM SJYZT_MRTJ
+        WHERE RQ = TO_CHAR(SYSDATE - 1, 'YYYY-MM-DD')
+    </select>
+    <select id="getByDate" resultType="com.inspur.ggpd.data.onemap.data.SjyztMrtj">
+        SELECT *
+        FROM SJYZT_MRTJ
+        WHERE RQ = #{date}
+    </select>
+
+    <select id="getFjgThisWeek" resultType="double">
+        SELECT (END.FJGZL - BEGIN.FJGZL)
+        FROM (SELECT NVL(FJGZL, 0) FJGZL
+              FROM SJYZT_MRTJ
+              WHERE to_date(RQ, 'yyyy-mm-dd hh24:mi:ss') = TRUNC(NEXT_DAY(SYSDATE - 8, 1) + 1)) BEGIN,
+             (SELECT NVL(FJGZL, 0) FJGZL
+              FROM SJYZT_MRTJ
+              WHERE to_date(RQ, 'yyyy-mm-dd hh24:mi:ss') = TRUNC(SYSDATE - 1)) END
+    </select>
+
+    <select id="getFjgThisMonth" resultType="double">
+        SELECT (END.FJGZL - BEGIN.FJGZL)
+        FROM (SELECT NVL(FJGZL, 0) FJGZL
+              FROM SJYZT_MRTJ
+              WHERE to_date(RQ, 'yyyy-mm-dd hh24:mi:ss') = TRUNC(SYSDATE, 'mm')) BEGIN,
+             (SELECT NVL(FJGZL, 0) FJGZL
+              FROM SJYZT_MRTJ
+              WHERE to_date(RQ, 'yyyy-mm-dd hh24:mi:ss') = TRUNC(SYSDATE - 1)) END
+    </select>
+
+    <select id="getFjgLastMonth" resultType="double">
+        SELECT NVL(FJGZL, 0) FJGZL
+        FROM SJYZT_MRTJ
+        where TO_CHAR(to_date(RQ, 'yyyy-mm-dd hh24:mi:ss'), 'yyyy-mm-dd hh24:mi:ss') =
+              to_char(last_day(add_months(trunc(sysdate), -1)), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="getFjgLastYearSameMonth" resultType="double">
+        SELECT NVL(FJGZL, 0) FJGZL
+        FROM SJYZT_MRTJ
+        WHERE RQ = TO_CHAR(last_day(add_months(sysdate, -12)), 'yyyy-mm-dd')
+    </select>
+
+    <select id="getThisYearData" resultType="long">
+        SELECT SUM(XZSJL)
+        FROM SJYZT_MRTJ
+        WHERE TO_CHAR(TRUNC(SYSDATE), 'YYYY') = TO_CHAR(to_date(RQ, 'yyyy-mm-dd'), 'YYYY')
+    </select>
+
+    <select id="getFjgThisYearData" resultType="double">
+        SELECT A.FJGZL - B.FJGZL
+        FROM (SELECT NVL(FJGZL, 0) FJGZL
+              FROM SJYZT_MRTJ
+              WHERE RQ = (SELECT MAX(RQ) FROM SJYZT_MRTJ)
+                AND TO_CHAR(TRUNC(SYSDATE), 'YYYY') = TO_CHAR(to_date(RQ, 'yyyy-mm-dd'), 'YYYY')) A,
+             (SELECT NVL(FJGZL, 0) FJGZL
+              FROM SJYZT_MRTJ
+              WHERE RQ = (SELECT MIN(RQ) FROM SJYZT_MRTJ)
+                AND TO_CHAR(TRUNC(SYSDATE), 'YYYY') = TO_CHAR(to_date(RQ, 'yyyy-mm-dd'), 'YYYY')) B
+    </select>
+</mapper>

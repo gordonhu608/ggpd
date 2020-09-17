@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.newsPopularFeelings.sjzydao.PopularFeelingsInfoMapper">
+    <resultMap type="com.inspur.ggpd.newsPopularFeelings.data.PopularFeelingsInfo" id="popularFeelingsInfo">
+        <result property="id" column="ID"></result>
+        <result property="zzm" column="ZZM"></result>
+        <result property="ly" column="LY"></result>
+        <result property="fbsj" column="FBSJ"></result>
+        <result property="btm" column="BTM"></result>
+        <result property="cjsj" column="CJSJ"></result>
+        <result property="xglj" column="XGLJ"></result>
+        <result property="sjly" column="SJLY"></result>
+        <result property="gxsj" column="GXSJ"></result>
+        <result property="yssjid" column="YSSJID"></result>
+        <result property="hxnr" column="HXNR"></result>
+        <result property="crsj" column="CRSJ"></result>
+    </resultMap>
+
+    <select id="getPopularFeelingsInfo" parameterType="map" resultMap="popularFeelingsInfo">
+        SELECT
+            ID,
+            ZZM,
+            LY,
+            CASE WHEN INSTR(FBSJ,'/')>0 AND INSTR(FBSJ,'.')>0 THEN TO_CHAR(TO_DATE(SUBSTR(FBSJ, 0, INSTR(FBSJ, '.',1,1)-1),'yyyy-MM-dd HH24:mi:ss'),'yyyy-MM-dd HH24:mi:ss') ELSE FBSJ END AS FBSJ,
+            BTM,
+            CJSJ,
+            XGLJ,
+            SJLY,
+            GXSJ,
+            YSSJID,
+            HXNR,
+            CRSJ
+        FROM (
+            SELECT tt.*, ROWNUM AS rowno
+            FROM (
+                SELECT t.*
+                FROM CYZC_XWYQ_YQXX t
+                WHERE FBSJ IS NOT NULL AND BTM IS NOT NULL AND HXNR IS NOT NULL
+                ORDER BY FBSJ DESC) tt
+            WHERE ROWNUM &lt;= #{pageNumber} * #{pageSize}) table_alias
+        WHERE table_alias.rowno &gt; (#{pageNumber}-1) * #{pageSize}
+    </select>
+
+    <select id="getpopularFeelingsInfoTotal" resultType="int">
+        SELECT COUNT(*) as "COUNT" FROM CYZC_XWYQ_YQXX WHERE FBSJ IS NOT NULL AND BTM IS NOT NULL AND HXNR IS NOT NULL
+    </select>
+
+    <select id="getPopularFeelingsInfoDetail" parameterType="map" resultMap="popularFeelingsInfo">
+        SELECT
+            ID,
+            ZZM,
+            LY,
+            CASE WHEN INSTR(FBSJ,'/')>0 AND INSTR(FBSJ,'.')>0 THEN TO_CHAR(TO_DATE(SUBSTR(FBSJ, 0, INSTR(FBSJ, '.',1,1)-1),'yyyy-MM-dd HH24:mi:ss'),'yyyy-MM-dd HH24:mi:ss') ELSE FBSJ END AS FBSJ,
+            BTM,
+            CJSJ,
+            XGLJ,
+            SJLY,
+            GXSJ,
+            YSSJID,
+            HXNR,
+            CRSJ
+        FROM CYZC_XWYQ_YQXX WHERE ID = #{id}
+    </select>
+
+    <select id="getStripPopularFeelingsInfoId" parameterType="map" resultMap="popularFeelingsInfo">
+        SELECT
+            ID,
+            ZZM,
+            LY,
+            CASE WHEN INSTR(FBSJ,'/')>0 AND INSTR(FBSJ,'.')>0 THEN TO_CHAR(TO_DATE(SUBSTR(FBSJ, 0, INSTR(FBSJ, '.',1,1)-1),'yyyy-MM-dd HH24:mi:ss'),'yyyy-MM-dd HH24:mi:ss') ELSE FBSJ END AS FBSJ,
+            BTM,
+            CJSJ,
+            XGLJ,
+            SJLY,
+            GXSJ,
+            YSSJID,
+            HXNR,
+            CRSJ
+        FROM CYZC_XWYQ_YQXX A
+        WHERE ID = (
+            SELECT C.P
+            FROM (
+                SELECT T.ID, LAG(T.ID, 1, 0) OVER(ORDER BY t.FBSJ DESC) AS P
+                FROM CYZC_XWYQ_YQXX T WHERE FBSJ IS NOT NULL AND BTM IS NOT NULL AND HXNR IS NOT NULL) C
+            WHERE C.ID = #{id})
+    </select>
+
+    <select id="getNextStripPopularFeelingsInfoId" parameterType="map" resultMap="popularFeelingsInfo">
+        SELECT
+            ID,
+            ZZM,
+            LY,
+            CASE WHEN INSTR(FBSJ,'/')>0 AND INSTR(FBSJ,'.')>0 THEN TO_CHAR(TO_DATE(SUBSTR(FBSJ, 0, INSTR(FBSJ, '.',1,1)-1),'yyyy-MM-dd HH24:mi:ss'),'yyyy-MM-dd HH24:mi:ss') ELSE FBSJ END AS FBSJ,
+            BTM,
+            CJSJ,
+            XGLJ,
+            SJLY,
+            GXSJ,
+            YSSJID,
+            HXNR,
+            CRSJ
+        FROM CYZC_XWYQ_YQXX A
+        WHERE ID = (
+            SELECT C.P
+            FROM (
+                SELECT T.ID, LEAD(T.ID, 1, 0) OVER(ORDER BY t.FBSJ DESC) AS P
+                FROM CYZC_XWYQ_YQXX T WHERE FBSJ IS NOT NULL AND BTM IS NOT NULL AND HXNR IS NOT NULL) C
+            WHERE C.ID = #{id})
+    </select>
+</mapper>

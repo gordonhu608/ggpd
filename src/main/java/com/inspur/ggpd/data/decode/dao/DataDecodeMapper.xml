@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.data.decode.dao.DataDecodeMapper">
+
+    <!-- 根据数据类型与关键字查询数据解读 -->
+    <select id="getDataDecodesByDataTypeAndKeyword" resultType="com.inspur.ggpd.data.decode.data.DataDecode">
+        SELECT ID,BT,SJLX,NF,YF,RQ,CJSJ,GXSJ FROM DATA_DECODE WHERE 1=1
+        <if test="type!='' and type!=null">
+            AND SJLX=#{type}
+        </if>
+        <if test="keyword!='' and keyword!=null">
+            AND (BT LIKE CONCAT(CONCAT('%',#{keyword}),'%') OR WBSJ LIKE CONCAT(CONCAT('%',#{keyword}),'%'))
+        </if>
+        ORDER BY RQ DESC
+    </select>
+
+    <!--根据报告类型、年份、月份查询解读个数-->
+    <select id="getDataDecodeCountByTypeYearMonth" resultType="int">
+        SELECT count(1) FROM DATA_DECODE WHERE 1=1
+        <if test="type!='' and type!=null">
+            AND SJLX=#{type}
+        </if>
+        <if test="year!='' and year!=null">
+            AND NF=#{year}
+        </if>
+        <if test="month!='' and month!=null">
+            AND YF=#{month}
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.data.decode.sjzydao.ProductDecodeMapper">
+
+    <select id="getProductDecodeTableDataByYear" resultType="com.inspur.ggpd.data.decode.data.ProductDecodeTable">
+        SELECT YEAR,
+               PROVINCE,
+               COST,
+               LABOR_COST,
+               ROUND(LABOR_COST / COST, 2) LABOR_PROPORTION,
+               EXPENSES,
+               ROUND(EXPENSES / COST, 2)  EXPENSES_PROPORTION
+        FROM (select SJ YEAR,SF PROVINCE,
+                     SUM(CASE WHEN TMID IN ('101008', '101007', '101011', '101009', '101010') THEN ROUND(SZ, 2) ELSE 0 END)                                            COST,
+                     SUM(CASE WHEN TMID ='101008' THEN ROUND(SZ, 2) ELSE 0 END) LABOR_COST,
+                     SUM(CASE WHEN TMID ='101007' THEN ROUND(SZ, 2) ELSE 0 END) EXPENSES
+              from JJSJ_CBSY_SYXX
+              where CPID = '1306'AND SJ = #{year}
+              GROUP BY SJ, SF
+              ORDER BY SF)
+    </select>
+    <select id="getProductDecodeTextDataByYear" resultType="com.inspur.ggpd.data.decode.data.ProductDecodeText">
+        SELECT THIS.PLANT_AREA, THIS.YIELD, THIS.YIELD_PER_UNIT,
+               ROUND((THIS.PLANT_AREA - LAST.PLANT_AREA) * 100 / LAST.PLANT_AREA, 2) PLANT_AREA_TB,
+               ROUND((THIS.YIELD - LAST.YIELD) * 100 / LAST.YIELD, 2) YIELD_TB,
+               ROUND((THIS.YIELD_PER_UNIT - LAST.YIELD_PER_UNIT) * 100 / LAST.YIELD_PER_UNIT, 2) YIELD_PER_UNIT_TB,
+               COST.COST COST_PER_MU, ROUND(COST.COST / THIS.YIELD_PER_UNIT, 2) COST_PER_KG, LABOR.COST LABOR_COST,
+               ROUND(LABOR.COST * 100 / COST.COST, 2) LABOR_COST_PROPORTION, EXPENSES.COST EXPENSES,
+               ROUND(EXPENSES.COST * 100 / COST.COST, 2) EXPENSES_PROPORTION,
+               ROUND((COST.COST - LAST_COST.COST) * 100 / LAST_COST.COST, 2) COST_TB
+        FROM (
+            SELECT AREA.ZHSJ PLANT_AREA, YIELD.ZHSJ YIELD,
+                ROUND(YIELD.ZHSJ * 1000 / AREA.ZHSJ, 2) YIELD_PER_UNIT
+            FROM (SELECT ZHSJ FROM JJSJ_QGSC_TJXX WHERE CPID = '112716' AND DQID = '00' AND SJ = #{year}) YIELD,
+                 (SELECT ZHSJ FROM JJSJ_QGSC_TJXX WHERE CPID = '121689' AND DQID = '00' AND SJ = #{year}) AREA
+            ) THIS, (
+                SELECT AREA.ZHSJ PLANT_AREA, YIELD.ZHSJ YIELD,
+                    ROUND(YIELD.ZHSJ * 1000 / AREA.ZHSJ, 2) YIELD_PER_UNIT
+                FROM (SELECT ZHSJ FROM JJSJ_QGSC_TJXX WHERE CPID = '112716' AND DQID = '00' AND SJ = #{year} - 1) YIELD,
+                     (SELECT ZHSJ FROM JJSJ_QGSC_TJXX WHERE CPID = '121689' AND DQID = '00' AND SJ = #{year} - 1) AREA
+            ) LAST, (
+                SELECT SUM(SZ) COST FROM JJSJ_CBSY_SYXX WHERE CPID = '1306' AND DQID = '101' AND SJ = #{year}
+                AND TMID IN ('101007', '101008', '101009', '101010', '101011')
+            ) COST, (
+                SELECT SZ COST FROM JJSJ_CBSY_SYXX WHERE CPID = '1306' AND DQID = '101' AND SJ = #{year} AND TMID = '101007'
+            ) EXPENSES, (
+                SELECT SZ COST FROM JJSJ_CBSY_SYXX WHERE CPID = '1306' AND DQID = '101' AND SJ = #{year} AND TMID = '101008'
+            ) LABOR, (
+                SELECT SUM(SZ) COST FROM JJSJ_CBSY_SYXX WHERE CPID = '1306' AND DQID = '101' AND SJ = #{year} - 1
+                AND TMID IN ('101007', '101008', '101009', '101010', '101011')
+            ) LAST_COST
+    </select>
+</mapper>

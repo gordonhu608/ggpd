@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.homePage.sjzydao.AppleBenefitMessageMapper">
+
+    <select id="getAppleBenefitMessage" resultType="map">
+        SELECT
+            A.SJ,
+            A.MMZCBSZ,
+            B.MMJLRSZ
+        FROM
+            (SELECT
+                    SJ,
+                    SZ AS MMZCBSZ
+            FROM "JJSJ_CBSY_SYXX"
+            WHERE CPID = '1306' AND DQID = #{areaId} AND TMID = '101005'
+            ORDER BY SJ) A,
+
+            (SELECT
+                    SJ,
+                    SZ AS MMJLRSZ
+            FROM "JJSJ_CBSY_SYXX"
+            WHERE CPID = '1306' AND DQID = #{areaId} AND TMID = '101014'
+            ORDER BY SJ) B
+        WHERE A.SJ = B.SJ ORDER BY SJ
+    </select>
+
+    <!--<select id="getAppleBenefitMessage" resultType="map">
+        SELECT
+            SJ,
+            DQ_ID,
+            SF,
+            TM_ID,
+            SZ
+        FROM "CBSY_SYXX"
+        WHERE CP_ID = '1306' AND DQ_ID = #{areaId} AND (TM_ID = #{totalCostId} OR TM_ID = #{retainedProfitsId} OR TM_ID = #{costProfitRatioId})
+        ORDER BY SJ
+    </select>-->
+
+    <select id="getNationwideTotalCostAndLaborCostByUnitPlanting" resultType="map">
+        SELECT
+            SJ AS SJ,
+            SF AS SF,
+            TMID AS TM_ID,
+            ROUND(SZ,2) AS SZ
+        FROM "JJSJ_CBSY_SYXX"
+        WHERE CPID = '1306' AND DQID = #{areaId}
+            AND SJ = (SELECT MAX(SJ) FROM "JJSJ_CBSY_SYXX")
+            AND TMID IN ('101008','101007','101011','101009','101010')
+    </select>
+
+    <!--<select id="getNationwideTotalCostAndLaborCostByUnitPlanting" resultType="map">
+        SELECT
+            SJ,
+            SF,
+            TM_ID,
+            ROUND(SZ,2) AS SZ
+        FROM "CBSY_SYXX"
+        WHERE CP_ID = '1306' AND DQ_ID = #{areaId}
+            AND SJ = (SELECT MAX(SJ) FROM "CBSY_SYXX")
+            AND (TM_ID = '101008' OR TM_ID = '101007' OR TM_ID = '101011' OR TM_ID = '101009' OR TM_ID = '101010')
+    </select>-->
+
+    <select id="getNationwideTotalCostAndLaborCostByUnitProduct" resultType="map">
+        SELECT
+            SJ AS SJ,
+            SF AS SF,
+            TMID AS TM_ID,
+            ROUND(SZ/(SELECT SZ FROM JJSJ_CBSY_SYXX WHERE SJ = (SELECT MAX(SJ) FROM JJSJ_CBSY_SYXX) AND DQID = #{areaId} AND TMID = '101001'),2) AS SZ
+        FROM JJSJ_CBSY_SYXX
+        WHERE CPID = '1306' AND DQID = #{areaId}
+            AND SJ = (SELECT MAX(SJ) FROM "JJSJ_CBSY_SYXX")
+            AND TMID IN ('101008','101007','101011','101009','101010')
+    </select>
+
+    <!--<select id="getNationwideTotalCostAndLaborCostByUnitProduct" resultType="map">
+        SELECT
+            SJ,
+            SF,
+            TM_ID,
+            ROUND(SZ/(SELECT SZ FROM CBSY_SYXX WHERE SJ = (SELECT MAX(SJ) FROM "CBSY_SYXX") AND DQ_ID = #{areaId} AND TM_ID = '101001'),2) AS SZ
+        FROM "CBSY_SYXX"
+        WHERE CP_ID = '1306' AND DQ_ID = #{areaId}
+            AND SJ = (SELECT MAX(SJ) FROM "CBSY_SYXX")
+            AND (TM_ID = '101008' OR TM_ID = '101007' OR TM_ID = '101011' OR TM_ID = '101009' OR TM_ID = '101010')
+    </select>-->
+
+<!--    获取人工成本-单位面积-->
+    <!--<select id="getAppleLoborMessage" parameterType="map" resultType="map">
+        SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+           AND A.DQ_ID IN (${province})
+           AND A.TM_ID IN (${labor})
+         ORDER BY A.SJ,A.DQ_ID,A.TM_ID
+    </select>-->
+    <select id="getAppleLoborMessage" parameterType="map" resultType="map">
+        SELECT SJ,DQID AS DQ_ID,TMID AS TM_ID,SZ
+          FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+           AND A.DQID IN (${province})
+           AND A.TMID IN (${labor})
+         ORDER BY A.SJ,A.DQID,A.TMID
+    </select>
+
+<!--    获取人工成本-单位产量-->
+    <!--<select id="getAppleLoborPerKGMessage" parameterType="map" resultType="map">
+       SELECT M.SJ,M.DQ_ID,M.TM_ID,DECODE(N.SZ,0,0,ROUND(M.SZ/N.SZ,2)) AS SZ FROM
+        (SELECT A.SJ,A.DQ_ID,A.TM_ID,A.SZ FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+             AND A.DQ_ID IN (${province})
+             AND A.TM_ID IN (${labor})
+         ORDER BY A.SJ,A.DQ_ID) M LEFT JOIN
+        (SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+             AND A.DQ_ID IN (${province})
+             AND A.TM_ID IN ('101001')
+         ORDER BY A.SJ,A.DQ_ID) N ON M.DQ_ID = N.DQ_ID AND M.SJ = N.SJ
+    </select>-->
+    <select id="getAppleLoborPerKGMessage" parameterType="map" resultType="map">
+       SELECT M.SJ,M.DQID AS DQ_ID,M.TMID AS TM_ID,DECODE(N.SZ,0,0,ROUND(M.SZ/N.SZ,2)) AS SZ FROM
+        (SELECT A.SJ,A.DQID,A.TMID,A.SZ FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN (${labor})
+         ORDER BY A.SJ,A.DQID) M LEFT JOIN
+        (SELECT A.SJ,A.DQID,A.TMID,A.SZ  FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN ('101001')
+         ORDER BY A.SJ,A.DQID) N ON M.DQID = N.DQID AND M.SJ = N.SJ
+    </select>
+
+<!--    获取土地成本-单位面积-->
+    <!--<select id="getAppleLandMessage" parameterType="map" resultType="map">
+        SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+           AND A.DQ_ID IN (${province})
+           AND A.TM_ID IN (${land})
+         ORDER BY A.SJ,A.DQ_ID,A.TM_ID
+    </select>-->
+    <select id="getAppleLandMessage" parameterType="map" resultType="map">
+        SELECT SJ,DQID AS DQ_ID,TMID AS TM_ID,SZ
+          FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN (${land})
+         ORDER BY A.SJ,A.DQID,A.TMID
+    </select>
+
+<!--    获取总土地成本-单位面积-->
+    <!--<select id="getAppleSumLandMessage" parameterType="map" resultType="map">
+        SELECT A.SJ,A.DQ_ID,SUM(A.SZ) AS SZ,q'/101012','101013/' AS TM_ID FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+           AND A.DQ_ID IN (${province})
+           AND A.TM_ID IN (${land})
+         GROUP BY A.SJ,A.DQ_ID
+    </select>-->
+    <select id="getAppleSumLandMessage" parameterType="map" resultType="map">
+         SELECT A.SJ,A.DQID AS DQ_ID,SUM(A.SZ) AS SZ,q'/101012','101013/' AS TM_ID FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+           AND A.DQID IN (${province})
+           AND A.TMID IN (${land})
+         GROUP BY A.SJ,A.DQID
+    </select>
+
+<!--    获取土地成本-单位产量-->
+    <!--<select id="getAppleLandPerKGMessage" parameterType="map" resultType="map">
+         SELECT M.SJ,M.DQ_ID,M.TM_ID,DECODE(N.SZ,0,0,ROUND(M.SZ/N.SZ,2)) AS SZ FROM
+        (SELECT A.SJ,A.DQ_ID,A.TM_ID,A.SZ FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+             AND A.DQ_ID IN (${province})
+             AND A.TM_ID IN (${land})
+         ORDER BY A.SJ,A.DQ_ID) M LEFT JOIN
+        (SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+             AND A.DQ_ID IN (${province})
+             AND A.TM_ID IN ('101001')
+         ORDER BY A.SJ,A.DQ_ID) N ON M.DQ_ID = N.DQ_ID AND M.SJ = N.SJ
+    </select>-->
+    <select id="getAppleLandPerKGMessage" parameterType="map" resultType="map">
+        SELECT M.SJ,M.DQID AS DQ_ID,M.TMID AS TM_ID,DECODE(N.SZ,0,0,ROUND(M.SZ/N.SZ,2)) AS SZ FROM
+        (SELECT A.SJ,A.DQID,A.TMID,A.SZ FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN (${land})
+         ORDER BY A.SJ,A.DQID) M LEFT JOIN
+        (SELECT A.SJ,A.DQID,A.TMID,A.SZ  FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN ('101001')
+         ORDER BY A.SJ,A.DQID) N ON M.DQID = N.DQID AND M.SJ = N.SJ
+    </select>
+
+<!--    获取总土地成本-单位产量-->
+    <!--<select id="getAppleSumLandPerKGMessage" parameterType="map" resultType="map">
+        SELECT M.SJ,M.DQ_ID,M.TM_ID,DECODE(N.SZ,0,0,ROUND(M.SZ/N.SZ,2)) AS SZ FROM
+        (SELECT A.SJ,A.DQ_ID,SUM(A.SZ) AS SZ,q'/101012','101013/' AS TM_ID FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+             AND A.DQ_ID IN (${province})
+             AND A.TM_ID IN (${land})
+         GROUP BY A.SJ,A.DQ_ID
+         ORDER BY A.SJ,A.DQ_ID) M LEFT JOIN
+         (SELECT * FROM CBSY_SYXX A
+             WHERE A.CP_ID = '1306'
+                 AND A.DQ_ID IN (${province})
+                 AND A.TM_ID IN ('101001')
+             ORDER BY A.SJ,A.DQ_ID) N ON M.DQ_ID = N.DQ_ID AND M.SJ = N.SJ
+    </select>-->
+    <select id="getAppleSumLandPerKGMessage" parameterType="map" resultType="map">
+         SELECT M.SJ,M.DQID AS DQ_ID,M.TMID AS TM_ID,DECODE(N.SZ,0,0,ROUND(M.SZ/N.SZ,2)) AS SZ FROM
+        (SELECT A.SJ,A.DQID,SUM(A.SZ) AS SZ,q'/101012','101013/' AS TMID FROM JJSJ_CBSY_SYXX A
+             WHERE A.CPID = '1306'
+                 AND A.DQID IN (${province})
+               AND A.TMID IN (${land})
+             GROUP BY A.SJ,A.DQID) M LEFT JOIN
+        (SELECT A.SJ,A.DQID,A.TMID,A.SZ  FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN ('101001')
+         ORDER BY A.SJ,A.DQID) N ON M.DQID = N.DQID AND M.SJ = N.SJ
+    </select>
+
+<!--    物质与服务费用-单位面积-->
+    <!--<select id="getAppleCostMessage" parameterType="map" resultType="map">
+        SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+           AND A.DQ_ID IN (${province})
+           AND A.TM_ID IN (${cost})
+         ORDER BY A.SJ,A.DQ_ID,A.TM_ID
+    </select>-->
+    <select id="getAppleCostMessage" parameterType="map" resultType="map">
+        SELECT SJ,DQID AS DQ_ID,TMID AS TM_ID,SZ
+          FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN (${cost})
+         ORDER BY A.SJ,A.DQID,A.TMID
+    </select>
+
+    <!--    物质与服务费用-单位产品-->
+    <!--<select id="getAppleCostPerKGMessage" parameterType="map" resultType="map">
+        SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+           AND A.DQ_ID IN (${province})
+           AND A.TM_ID IN (${cost})
+         ORDER BY A.SJ,A.DQ_ID,A.TM_ID
+    </select>-->
+    <select id="getAppleCostPerKGMessage" parameterType="map" resultType="map">
+        SELECT SJ,DQID AS DQ_ID,TMID AS TM_ID,SZ
+          FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN (${cost})
+         ORDER BY A.SJ,A.DQID,A.TMID
+    </select>
+
+    <!--    物质与服务费用-化肥用量-->
+    <!--<select id="getAppleFertilizerMessage" parameterType="map" resultType="map">
+        SELECT * FROM CBSY_SYXX A
+         WHERE A.CP_ID = '1306'
+           AND A.DQ_ID IN (${province})
+           AND A.TM_ID IN (${fertilizer})
+         ORDER BY A.SJ,A.DQ_ID,A.TM_ID
+    </select>-->
+    <select id="getAppleFertilizerMessage" parameterType="map" resultType="map">
+        SELECT SJ,DQID AS DQ_ID,TMID AS TM_ID,SZ
+          FROM JJSJ_CBSY_SYXX A
+         WHERE A.CPID = '1306'
+             AND A.DQID IN (${province})
+             AND A.TMID IN (${fertilizer})
+         ORDER BY A.SJ,A.DQID,A.TMID
+    </select>
+</mapper>

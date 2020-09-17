@@ -1,0 +1,104 @@
+@media screen and (width: 1200px) {
+  html {
+    font-size: 100px;
+    min-width: 100%;
+  }
+}
+
+@media screen and (min-width: 899px) {
+  html {
+    font-size: 74.96339678px !important;
+  }
+}
+
+@media screen and (min-width: 1124px) {
+  html {
+    font-size: 93.70424597px !important;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  html {
+    font-size: 100px !important;
+  }
+}
+
+@media screen and (min-width: 1265px) {
+  html {
+    font-size: 105.41727672px !important;
+  }
+}
+
+@media screen and (min-width: 1405px) {
+  html {
+    font-size: 117.13030747px !important
+  }
+}
+
+@media screen and (min-width: 1686px) {
+  html {
+    font-size: 140.55636897px !important;
+  }
+}
+
+@media screen and (min-width: 3373px) {
+  html {
+    font-size: 281.11273792px !important;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  font-family: arial, microsoft yahei, simsun, simhei, sans-serif;
+  font-size: 0.14rem;
+}
+
+.container {
+  border: 1px solid #E1DFDA;
+  border-top: 2px solid #024A84;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+}
+
+.content {
+  font-size: 15px;
+  padding: 0 30px;
+}
+
+.content > h3 {
+  font-size: 0.25rem;
+  font-weight: normal;
+  line-height: 50px;
+  text-align: center;
+}
+
+.content > span { margin-left: -3px; }
+
+.chart {
+  height: 300px;
+  margin: 30px 0;
+}
+
+.crumbs {
+  background: url(../../img/crumbs_bg.png) no-repeat left center;
+  color: #A39F99;
+  line-height: 0.46rem;
+  padding-left: 0.24rem;
+}
+
+.crumbs span {
+  color: #333;
+}
+
+.crumbs span.home, .crumbs span.parent {
+  color: #A39F99;
+  cursor: pointer;
+}
+
+.sub-title { text-align: center; }
+.sub-title > label { margin: 0 1rem; }

@@ -1,0 +1,307 @@
+@font-face {
+    font-family: Haettemschweiler;
+    src: url('../font/HATTEN.TTF');
+}
+
+/* 以下适配设置是针对本系统设置的特定值  不通用  */
+@media screen and (width: 1200px) {
+    html {
+        font-size: 100px;
+        min-width: 100%;
+    }
+}
+
+@media screen and (min-width: 899px) {
+    html {
+        font-size: 74.96339678px !important;
+    }
+}
+
+@media screen and (min-width: 1124px) {
+    html {
+        font-size: 93.70424597px !important;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    html {
+        font-size: 100px !important;
+    }
+}
+
+@media screen and (min-width: 1265px) {
+    html {
+        font-size: 105.41727672px !important;
+    }
+}
+
+@media screen and (min-width: 1405px) {
+    html {
+        font-size: 117.13030747px !important
+    }
+}
+
+@media screen and (min-width: 1686px) {
+    html {
+        font-size: 140.55636897px !important;
+    }
+}
+
+@media screen and (min-width: 3373px) {
+    html {
+        font-size: 281.11273792px !important;
+    }
+}
+
+html {
+    width: 100%;
+}
+
+body {
+    font-family: arial, microsoft yahei, simsun, simhei, sans-serif;
+    font-size: 0.14rem;
+    width: 100%;
+    margin: 0;
+    padding-bottom: 0.4rem;
+}
+
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+ul, li {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: #000;
+}
+
+::-webkit-scrollbar { /*������������ʽ*/
+    width: 6px; /*�߿��ֱ��Ӧ�����������ĳߴ�*/
+    height: 1px;
+}
+
+::-webkit-scrollbar-thumb { /*����������С����*/
+    border-radius: 5px;
+    background: #ccc;
+}
+
+::-webkit-scrollbar-track { /*������������*/
+    border-radius: 5px;
+}
+
+.crumbs {
+    height: 0.46rem;
+    line-height: 0.46rem;
+    color: #A39F99;
+    background: url(../../img/crumbs_bg.png) no-repeat;
+    background-position: left center;
+    padding-left: 0.24rem;
+}
+
+.crumbs span {
+    color: #333;
+}
+
+.crumbs span.home {
+    color: #A39F99;
+    cursor: pointer;
+}
+
+.container {
+    width: 100%;
+    overflow: hidden;
+}
+
+.left_content {
+    float: left;
+    width: 4.74rem;
+    border: 1px solid #E1DFDA;
+}
+
+.module_line {
+    width: 100%;
+    height: 0.02rem;
+    background: url(../../img/line.jpg) no-repeat;
+    background-size: 100% 0.02rem;
+}
+
+.data_overview {
+    width: 100%;
+    height: 3.24rem;
+}
+
+.data_title {
+    width: 100%;
+    height: 0.59rem;
+    font-size: 0.24rem;
+    line-height: 0.59rem;
+    color: #05487c;
+    padding-left: 0.2rem;
+    background-image: linear-gradient(90deg, #f1f5ff 0%, #ffffff 100%);
+    border-bottom: dashed 1px #d1d8e0;
+}
+
+.data_info {
+    width: 100%;
+    height: calc(100% - 0.62rem);
+    padding: 0.4rem 0.22rem;
+}
+
+.data_info > div {
+    float: left;
+    width: 2.12rem;
+    height: 100%;
+}
+
+.data_info > div:last-child {
+    float: right;
+}
+
+.total_data_title {
+    font-size: 0.16rem;
+}
+
+.data_count {
+    height: 0.8rem;
+    line-height: 0.8rem;
+    font-size: 0.18rem;
+    color: #006BB9;
+}
+
+.data_count span {
+    font-size: 0.5rem;
+    font-family: "Haettemschweiler" !important;
+    /*letter-spacing: 0.02rem;*/
+    letter-spacing: 0;
+    padding-right: 0.05rem;
+}
+
+.data_category {
+    width: 100%;
+    height: 0.7rem;
+}
+
+.data_category > div {
+    width: 85%;
+    height: 80%;
+    font-size: 0.12rem;
+    background: url(../../img/oneMap/fangk2.png) no-repeat;
+    background-size: 100% 100%;
+    text-align: center;
+}
+
+.data_category > div:first-child {
+    margin-left: 0;
+}
+
+.data_category > div:last-child {
+    margin-top: 5px;
+}
+
+.category_count {
+    line-height: 0.4rem;
+    font-size: 0.24rem;
+    /*font-weight: 600;*/
+    color: #006BB9;
+    font-family: "Haettemschweiler" !important;
+}
+
+.overview_unstructured .data_count,
+.overview_unstructured .category_count {
+    color: #00C4D3;
+}
+
+.overview_unstructured .data_category > div {
+    background: url(../../img/oneMap/fangk1.png) no-repeat;
+    background-size: 100% 100%;
+}
+
+.data_collect {
+    width: 100%;
+    height: 2.72rem;
+}
+
+.module_top {
+    width: 100%;
+    height: 0.22rem;
+}
+
+.module_title {
+    float: left;
+    font-size: 0.18rem;
+    font-weight: 600;
+    border-left: 0.04rem solid #0089C5;
+    padding-left: 0.1rem;
+}
+
+.chart_tab {
+    float: right;
+    padding-right: 0.1rem;
+}
+
+.chart_tab > div {
+    display: inline-block;
+    border-bottom: 0.02rem solid transparent;
+    margin-right: 0.1rem;
+    cursor: pointer;
+}
+
+.chart_tab > div:hover,
+.chart_tab > div.active {
+    color: #FF2B00;
+    border-bottom: 0.02rem solid #FF2B00;
+}
+
+.tab_content {
+    width: 100%;
+    height: calc(100% - 0.35rem);
+    margin-top: 0.1rem;
+}
+
+.tab_content > div {
+    width: 100%;
+    height: 100%;
+}
+
+.right_content {
+    float: right;
+    width: 7.18rem;
+}
+
+.first_row {
+    width: 100%;
+    height: 2.95rem;
+}
+
+.first_row > div {
+    float: left;
+    width: 3.54rem;
+    height: 100%;
+    border: 0.01rem solid #ddd;
+    border-top: 0.02rem solid #004B7C;
+    padding-top: 0.22rem;
+}
+
+.first_row > div:last-child {
+    float: right;
+}
+
+.second_row {
+    width: 100%;
+    height: 2.95rem;
+    margin-top: 0.1rem;
+}
+
+.data_handle {
+    width: 100%;
+    height: 100%;
+    border: 0.01rem solid #ddd;
+    border-top: 0.02rem solid #004B7C;
+    padding-top: 0.22rem;
+}

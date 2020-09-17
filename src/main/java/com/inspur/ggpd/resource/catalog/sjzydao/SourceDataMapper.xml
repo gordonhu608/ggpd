@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.resource.catalog.sjzydao.SourceDataMapper">
+    <select id="findAll" resultType="java.util.Map">
+        SELECT * FROM (
+        SELECT ID,
+        <foreach collection="showConfig" item="item" separator=", ">
+            ${item.fieldName}
+            <if test="item.orgName!=null and item.orgName!=''">
+                ${item.orgName}
+            </if>
+        </foreach>
+        FROM ${tableCode}
+        <if test="searchConfig!=null">
+            <where>
+                1=1
+                <if test="searchConfig.timeField!=null and searchConfig.timeField!=''">
+                    AND SUBSTR(${searchConfig.timeField},1,4) > (TO_CHAR(SYSDATE,'YYYY')-10)
+                </if>
+                <if test="1 == searchConfig.areaShowFlag and null != area and  '' != area">
+                    AND ${searchConfig.areaField} LIKE '%'||#{area}||'%'
+                </if>
+                <if test="1 == searchConfig.timeShowFlag and null != time and  '' != time">
+                    AND ${searchConfig.timeField} BETWEEN SUBSTR(#{time}, 1, 10) AND SUBSTR(#{time}, 14)
+                </if>
+                <if test="1 == searchConfig.keywordShowFlag and null != keyword and  '' != keyword">
+                    AND
+                    <foreach collection="keyword" item="word" separator=" AND ">
+                        <foreach close=")" collection="showConfig" item="item" open="(" separator=" OR ">
+                            ${item.fieldName} LIKE '%'||#{word}||'%'
+                        </foreach>
+                    </foreach>
+                </if>
+            </where>
+        </if>
+        <if test="null != orderField and '' != orderField">
+            ORDER BY ${orderField} ${orderDir}
+        </if>
+        <if test="searchConfig!=null">
+            <if test="(null == orderField or '' == orderField ) and (null != orderField1 and '' != orderField1)">
+                ORDER BY
+            </if>
+            <if test="null != orderField and '' != orderField and null != orderField1 and '' != orderField1">
+                ,
+            </if>
+            <if test="null != orderField1 and '' != orderField1">
+                ${orderField1} ${orderDir1}
+            </if>
+            <if test="null != orderField2 and '' != orderField2">
+                ,${orderField2} ${orderDir2}
+            </if>
+            <if test="null != orderField3 and '' != orderField3">
+                ,${orderField3} ${orderDir3}
+            </if>
+            <if test="null != orderField4 and '' != orderField4">
+                ,${orderField4} ${orderDir4}
+            </if>
+        </if>
+
+        )
+    </select>
+
+    <select id="getDataById" resultType="java.util.Map">
+        SELECT * FROM ${tableCode} WHERE 1=1
+        <if test="id!=null and id!=''">
+            AND ID=#{id}
+        </if>
+    </select>
+</mapper>

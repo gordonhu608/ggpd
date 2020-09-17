@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.homePage.sjzydao.ProductionStatisticalInformationMapper">
+
+    <!--苹果种植分布-面积-->
+    <select id="getPlantingDistributionList" parameterType="map" resultType="map">
+        SELECT
+            CASE DQMC
+                WHEN '黑龙江省' THEN SUBSTR(DQMC, 1, 3)
+                WHEN '内蒙古自治区' THEN SUBSTR(DQMC, 1, 3)
+                ELSE SUBSTR(DQMC, 1, 2) END AS "name",
+            NVL((SELECT ZHSJ*1.5 FROM JJSJ_QGSC_TJXX WHERE DQID = A.DQID AND CPID = '121689'
+                AND SJ = (SELECT MAX(SJ) FROM (SELECT SJ,COUNT(ZHSJ) COUNT FROM JJSJ_QGSC_TJXX WHERE CPID = '121689' AND LENGTH(DQID) = 2 GROUP BY SJ) WHERE COUNT > 10)), '0') "value"
+        FROM (SELECT DQID,DQMC FROM JJSJ_QGSC_DQXX WHERE DJ = 1) A ORDER BY "value" DESC
+    </select>
+
+    <select id="getYieldDistributionList" parameterType="map" resultType="map">
+        SELECT
+            CASE DQMC
+                    WHEN '黑龙江省' THEN SUBSTR(DQMC, 1, 3)
+                    WHEN '内蒙古自治区' THEN SUBSTR(DQMC, 1, 3)
+                    ELSE SUBSTR(DQMC, 1, 2) END AS "name",
+            NVL((SELECT ZHSJ FROM JJSJ_QGSC_TJXX WHERE DQID = A.DQID AND CPID = '112716'
+                    AND SJ = (SELECT MAX(SJ) FROM (SELECT SJ,COUNT(ZHSJ) COUNT FROM JJSJ_QGSC_TJXX WHERE CPID = '112716' AND LENGTH(DQID) = 2 GROUP BY SJ) WHERE COUNT > 10)), '0') "value"
+        FROM (SELECT DQID,DQMC FROM JJSJ_QGSC_DQXX WHERE DJ = 1) A ORDER BY "value" DESC
+    </select>
+    <!--苹果产量趋势-->
+    <!--<select id="getProductionTrendList" resultType="map">
+        SELECT
+            SJ AS "timeId",
+            ROUND(ZHSJ,2) AS "sumData"
+        FROM JJSJ_QGSC_TJXX
+        WHERE SJ BETWEEN extract(year from sysdate)-21 and extract(year from sysdate)
+            AND CPID = '112716' AND DQID ='00' ORDER BY SJ ASC
+    </select>-->
+
+    <!--获取苹果产量及面积按时间升序排列-->
+    <select id="getApplePlantAreaAndYield" resultType="map">
+        SELECT A.SJ,
+            A.QGCLCPID,
+            A.QGCL,
+            B.QGZZMJCPID,
+            B.QGZZMJ
+        FROM
+            (SELECT
+                    SJ,
+                    CPID AS QGCLCPID,
+                    ZHSJ AS QGCL
+            FROM "JJSJ_QGSC_TJXX"
+            WHERE DQID = '00' AND CPID = '112716' AND SJ BETWEEN (SELECT MAX(SJ)-6 FROM JJSJ_QGSC_TJXX WHERE DQID = '00' AND CPID = '112716') AND (SELECT MAX(SJ) FROM JJSJ_QGSC_TJXX WHERE DQID = '00' AND CPID = '112716')
+            ORDER BY SJ) A,
+            (SELECT
+                    SJ,
+                    CPID AS QGZZMJCPID,
+                    ZHSJ*1.5 AS QGZZMJ
+            FROM "JJSJ_QGSC_TJXX"
+            WHERE DQID = '00' AND CPID = '121689' AND SJ BETWEEN (SELECT MAX(SJ)-6 FROM JJSJ_QGSC_TJXX WHERE DQID = '00' AND CPID = '121689') AND (SELECT MAX(SJ) FROM JJSJ_QGSC_TJXX WHERE DQID = '00' AND CPID = '121689')
+            ORDER BY SJ) B
+        WHERE A.SJ = B.SJ
+    </select>
+
+    <!--获取苹果产量及面积按时间降序排列-->
+    <!--<select id="getApplePlantAreaAndYieldByProductIdDesc" resultType="map">
+        SELECT
+            SJ AS TIME_ID,
+            DQID AS AREA_ID,
+            CPID AS PRODUCT_ID,
+            ZHSJ AS SUM_DATA
+        FROM "JJSJ_QGSC_TJXX"
+        WHERE DQID = '00' AND CPID = #{typeCode}
+        ORDER BY SJ DESC
+    </select>
+
+    &lt;!&ndash;历史演变中全国苹果种植面积、产量增减幅&ndash;&gt;
+    <select id="getPlantingAreaAndYieldChange" resultType="map">
+        SELECT
+            C.SJ AS TIME_ID,
+            A.CPID AS PRODUCT_ID,
+            A.DQID AS AREA_ID,
+            A.ZHSJ AS LAST_YEAR_SUM_DATA,
+            C.ZHSJ AS SUM_DATA,
+            ROUND((C.ZHSJ-A.ZHSJ)/A.ZHSJ*100,2) AS RATE_CHANGE,
+            B.DQMC AS AREANAME
+        FROM "JJSJ_QGSC_TJXX" A
+        LEFT JOIN "JJSJ_QGSC_TJXX" C ON A.DQID = C.DQID,"JJSJ_QGSC_DQXX" B
+        WHERE A.DQID = B.DQID AND B.DJ = '1' AND A.CPID = #{typeCode} AND C.CPID = #{typeCode} AND A.SJ = #{timeLastYear} AND C.SJ = #{timeYear} AND C.ZHSJ != 0
+        ORDER BY RATE_CHANGE
+    </select>
+
+   &lt;!&ndash;历史演变中全国苹果单产增减幅&ndash;&gt;
+    <select id="getPerUnitYieldChange" resultType="map">
+        SELECT
+            H.PRODUCT_ID,
+            H.AREA_ID,
+            NVL(ROUND((J.AREA_ID*1000/(N.SUM_DATA*1.5)-H.AREA_ID*1000/(M.SUM_DATA*1.5))/(H.AREA_ID*1000/(M.SUM_DATA*1.5))*100,2),0) AS RATE_CHANGE,
+            B.DQMC AS AREANAME
+        FROM
+            (SELECT CPID AS PRODUCT_ID,DQID AS AREA_ID,ZHSJ AS SUM_DATA, SJ AS TIME_ID
+            FROM "JJSJ_QGSC_TJXX"
+            WHERE CPID = #{yieldTypeCode} AND SJ = #{timeLastYear} AND ZHSJ != 0) H LEFT JOIN
+            (SELECT CPID AS PRODUCT_ID,DQID AS AREA_ID,ZHSJ AS SUM_DATA, SJ AS TIME_ID
+            FROM "JJSJ_QGSC_TJXX"
+            WHERE CPID = #{yieldTypeCode} AND SJ = #{timeYear}) J ON H.AREA_ID = J.AREA_ID,
+            "JJSJ_QGSC_DQXX" B,
+            (SELECT CPID AS PRODUCT_ID,DQID AS AREA_ID,ZHSJ AS SUM_DATA, SJ AS TIME_ID
+            FROM "JJSJ_QGSC_TJXX"
+            WHERE CPID = #{plantingAreaTypeCode} AND SJ = #{timeLastYear} AND ZHSJ != 0) M LEFT JOIN
+            (SELECT CPID AS PRODUCT_ID,DQID AS AREA_ID,ZHSJ AS SUM_DATA, SJ AS TIME_ID
+            FROM "JJSJ_QGSC_TJXX"
+            WHERE CPID = #{plantingAreaTypeCode} AND SJ = #{timeYear} AND ZHSJ != 0) N ON M.AREA_ID = N.AREA_ID
+        WHERE H.AREA_ID = B.DQID AND M.AREA_ID = B.DQID AND H.AREA_ID = M.AREA_ID
+        AND B.DJ = '1'
+        ORDER BY RATE_CHANGE
+    </select>
+
+    &lt;!&ndash;获取苹果种植面积及产量年份列表&ndash;&gt;
+    <select id="getTimeYearByProductId" resultType="map">
+        SELECT DISTINCT SJ AS TIME_ID FROM JJSJ_QGSC_TJXX WHERE CPID = #{typeCode} ORDER BY SJ
+    </select>-->
+</mapper>

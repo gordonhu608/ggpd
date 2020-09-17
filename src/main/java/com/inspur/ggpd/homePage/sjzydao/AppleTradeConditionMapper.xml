@@ -1,0 +1,998 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.inspur.ggpd.homePage.sjzydao.AppleTradeConditionMapper">
+
+    <!--<select id="getAppleForeignTradeList" resultType="map">
+        SELECT SUBSTR(TIME_ID,1,4) AS "timeYear",
+            SUM(IMPORT_AMOUNT_MONTH) AS "jksl",
+            SUM(EXPORT_AMOUNT_MONTH) AS "cksl"
+        FROM GJMY_MYQK
+        WHERE PRODUCT_ID = '08081000' AND SUBSTR(TIME_ID,1,4)
+            BETWEEN EXTRACT(year from sysdate)-5 AND EXTRACT(YEAR FROM sysdate)
+        GROUP BY SUBSTR(TIME_ID,1,4)
+        ORDER BY SUBSTR(TIME_ID,1,4)
+    </select>
+
+    <select id="getAppleTradeScaleByYearList" resultType="map">
+        SELECT SUBSTR(TIME_ID,1,4) AS "time",
+            ROUND(SUM(IMPORT_AMOUNT_MONTH)/10000, 2) AS "jksl",
+			ROUND(SUM(IMPORT_DOLLAR_MONTH)/10000, 2) AS "jkje",
+            ROUND(SUM(EXPORT_AMOUNT_MONTH)/10000, 2) AS "cksl",
+			ROUND(SUM(EXPORT_DOLLAR_MONTH)/10000, 2) AS "ckje"
+        FROM GJMY_MYQK
+        WHERE PRODUCT_ID = #{productCode} AND TRADE_ID = '110'
+        GROUP BY SUBSTR(TIME_ID,1,4)
+        ORDER BY SUBSTR(TIME_ID,1,4)
+    </select>
+
+    <select id="getAppleTradeScaleByMonthList" resultType="map">
+        SELECT TIME_ID AS "time",
+            ROUND(SUM(IMPORT_AMOUNT_MONTH)/10000, 2) AS "jksl",
+			ROUND(SUM(IMPORT_DOLLAR_MONTH)/10000, 2) AS "jkje",
+            ROUND(SUM(EXPORT_AMOUNT_MONTH)/10000, 2) AS "cksl",
+			ROUND(SUM(EXPORT_DOLLAR_MONTH)/10000, 2) AS "ckje"
+        FROM GJMY_MYQK
+        WHERE PRODUCT_ID = #{productCode} AND TRADE_ID = '110'
+        GROUP BY TIME_ID
+        ORDER BY TIME_ID
+    </select>
+
+    <select id="getAppleImportAndExportByYearList" resultType="map">
+        SELECT SUBSTR(TIME_ID,1,4) AS "timeYear",
+            ROUND(SUM(IMPORT_RMB_MONTH)/(SUM(IMPORT_AMOUNT_MONTH)*1000), 2) AS "jkje",
+            ROUND(SUM(EXPORT_RMB_MONTH)/(SUM(EXPORT_AMOUNT_MONTH)*1000), 2) AS "ckje"
+        FROM GJMY_MYQK
+        WHERE PRODUCT_ID = #{productCode} AND TRADE_ID = '110'
+        GROUP BY SUBSTR(TIME_ID,1,4)
+        ORDER BY SUBSTR(TIME_ID,1,4)
+    </select>
+
+    <select id="getAppleImportAndExportByMonthList" resultType="map">
+        SELECT TIME_ID AS "timeYear",
+            ROUND(SUM(IMPORT_RMB_MONTH)/(SUM(IMPORT_AMOUNT_MONTH)*1000), 2) AS "jkje",
+            ROUND(SUM(EXPORT_RMB_MONTH)/(SUM(EXPORT_AMOUNT_MONTH)*1000), 2) AS "ckje"
+        FROM GJMY_MYQK
+        WHERE PRODUCT_ID = #{productCode} AND TRADE_ID = '110'
+        GROUP BY TIME_ID
+        ORDER BY TIME_ID
+    </select>
+
+    <select id="getTradeFlowTimeLineByYearList" resultType="map">
+        SELECT DISTINCT SUBSTR(TIME_ID, 1, 4) AS "time" FROM GJMY_MYQK WHERE PRODUCT_ID = #{productCode} AND TRADE_ID = '110' ORDER BY "time"
+    </select>
+
+    <select id="getTradeFlowTimeLineByMonthList" resultType="map">
+        SELECT DISTINCT substr(TIME_ID,1,4)||'-'||substr(TIME_ID,5,6) AS "time" FROM GJMY_MYQK WHERE PRODUCT_ID = #{productCode} AND TRADE_ID = '110' ORDER BY "time"
+    </select>-->
+
+    <select id="getTradeFlowList" resultType="map">
+        SELECT
+            B.GJMC,
+            <if test='tradeFlow == "export"'>
+                ROUND(SUM(A.DQCKSL), 2) AS "cksl"
+            </if>
+            <if test='tradeFlow == "import"'>
+                ROUND(SUM(A.DQJKSL), 2) AS "jksl"
+            </if>
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B
+        WHERE A.GJID = B.GJID AND A.CPID = '08081000'
+            <if test='timeCode == "year"'>
+                AND SUBSTR(RQ, 1, 4) = (SELECT SUBSTR(MAX(RQ), 1, 4) FROM JJSJ_GJMY_MYQK WHERE CPID = '08081000')
+            </if>
+            <if test='timeCode == "month"'>
+                AND RQ = (SELECT MAX(RQ) FROM JJSJ_GJMY_MYQK WHERE CPID = '08081000')
+            </if>
+            <if test='tradeFlow == "export"'>
+                AND A.DQCKSL IS NOT NULL
+            </if>
+            <if test='tradeFlow == "import"'>
+                AND A.DQJKSL IS NOT NULL
+            </if>
+        GROUP BY B.GJMC
+        <if test='tradeFlow == "export"'>
+            ORDER BY "cksl" DESC
+        </if>
+        <if test='tradeFlow == "import"'>
+            ORDER BY "jksl" DESC
+        </if>
+    </select>
+
+    <!--<select id="getAppleImportProductTradeTraitByProductId" resultType="map">
+        SELECT
+        round( ( monthinfo.JKSL - paraminfo.baseprice ) / ( divisor + 1 ), 2 ) AS JKSLBJJ,
+        monthinfo.MONTHSTR AS RQ
+        FROM
+        (
+        select
+        (max(JKSL)+min(JKSL))/2 as baseprice,
+        (max(JKSL)-min(JKSL))/2 as divisor
+        from
+        (SELECT
+        SUBSTR( TIME_ID, 5, 2 ) MONTH,
+        round( sum( IMPORT_AMOUNT_MONTH ) / ( count( * ) ), 2 ) AS JKSL
+        FROM GJMY_MYQK
+        WHERE
+        TIME_ID &gt;= #{beginDate}
+        AND TIME_ID &lt;=#{endDate}
+        AND PRODUCT_ID  = #{productId} AND TRADE_ID = '110' AND IMPORT_AMOUNT_MONTH IS NOT NULL
+        GROUP BY SUBSTR( TIME_ID,5, 2 )
+        ORDER BY SUBSTR( TIME_ID,5, 2 )
+        ) baseinfo
+        ) paraminfo, (
+        SELECT
+        SUBSTR( TIME_ID, 5, 2 ) MONTHSTR,
+        round( sum( IMPORT_AMOUNT_MONTH ) / ( count( * ) ), 2 ) AS JKSL
+        FROM GJMY_MYQK
+        WHERE
+        TIME_ID &gt;= #{beginDate}
+        AND TIME_ID &lt;=#{endDate}
+        AND PRODUCT_ID  = #{productId} AND TRADE_ID = '110' AND IMPORT_AMOUNT_MONTH IS NOT NULL
+        GROUP BY SUBSTR( TIME_ID,5, 2 )
+        ORDER BY SUBSTR( TIME_ID,5, 2 )
+        ) monthinfo
+        ORDER BY monthinfo.MONTHSTR
+    </select>
+
+    <select id="getAppleExportProductTradeTraitByProductId" resultType="map">
+        SELECT
+        round( ( monthinfo.CKSL - paraminfo.baseprice ) / ( divisor + 1 ), 2 ) AS CKSLBJJ,
+        monthinfo.MONTHSTR AS RQ
+        FROM
+        (
+        select
+        (max(CKSL)+min(CKSL))/2 as baseprice,
+        (max(CKSL)-min(CKSL))/2 as divisor
+        from
+        (SELECT
+        SUBSTR( TIME_ID, 5, 2 ) MONTH,
+        round( sum( EXPORT_AMOUNT_MONTH ) / ( count( * ) ), 2 ) AS CKSL
+        FROM GJMY_MYQK
+        WHERE
+        TIME_ID &gt;= #{beginDate}
+        AND TIME_ID &lt;=#{endDate}
+        AND PRODUCT_ID  = #{productId} AND TRADE_ID = '110' AND EXPORT_AMOUNT_MONTH IS NOT NULL
+        GROUP BY SUBSTR( TIME_ID,5, 2 )
+        ORDER BY SUBSTR( TIME_ID,5, 2 )
+        ) baseinfo
+        ) paraminfo, (
+        SELECT
+        SUBSTR( TIME_ID, 5, 2 ) MONTHSTR,
+        round( sum( EXPORT_AMOUNT_MONTH ) / ( count( * ) ), 2 ) AS CKSL
+        FROM GJMY_MYQK
+        WHERE
+        TIME_ID &gt;= #{beginDate}
+        AND TIME_ID &lt;=#{endDate}
+        AND PRODUCT_ID  = #{productId} AND TRADE_ID = '110' AND EXPORT_AMOUNT_MONTH IS NOT NULL
+        GROUP BY SUBSTR( TIME_ID,5, 2 )
+        ORDER BY SUBSTR( TIME_ID,5, 2 )
+        ) monthinfo
+        ORDER BY monthinfo.MONTHSTR
+    </select>-->
+
+    <!--SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)-->
+    <!--TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')-->
+    <select id="getTradeDecodeAllApple" resultType="map">
+        (SELECT
+            A.CPID,
+            A.DQCKSL,
+            A.DQJKSL,
+            A.DQCKJEMY,
+            A.DQJKJEMY,
+            A.YZDYCKSL,
+            A.YZDYCKJEMY,
+            A.YZDQJKSL,
+            A.YZDQJKJEMY,
+            ROUND(DECODE(B.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS CKLTB,
+            ROUND(DECODE(B.DQJKSL,0,NULL,NULL,NULL,ROUND((A.DQJKSL - B.DQJKSL)/B.DQJKSL,4)),4)*100 AS JKLTB,
+            ROUND(DECODE(B.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - B.DQCKJEMY)/B.DQCKJEMY,4)),4)*100 AS CKETB,
+            ROUND(DECODE(B.DQJKJEMY,0,NULL,NULL,NULL,ROUND((A.DQJKJEMY - B.DQJKJEMY)/B.DQJKJEMY,4)),4)*100 AS JKETB,
+            ROUND(DECODE(C.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - C.DQCKSL)/C.DQCKSL,4)),4)*100 AS CKLHB,
+            ROUND(DECODE(C.DQJKSL,0,NULL,NULL,NULL,ROUND((A.DQJKSL - C.DQJKSL)/C.DQJKSL,4)),4)*100 AS JKLHB,
+            ROUND(DECODE(C.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - C.DQCKJEMY)/C.DQCKJEMY,4)),4)*100 AS CKEHB,
+            ROUND(DECODE(C.DQJKJEMY,0,NULL,NULL,NULL,ROUND((A.DQJKJEMY - C.DQJKJEMY)/C.DQJKJEMY,4)),4)*100 AS JKEHB,
+            ROUND(DECODE(B.YZDYCKSL,0,NULL,NULL,NULL,ROUND((A.YZDYCKSL - B.YZDYCKSL)/B.YZDYCKSL,4)),4)*100 AS YZDYCKSLTB,
+            ROUND(DECODE(B.YZDYCKJEMY,0,NULL,NULL,NULL,ROUND((A.YZDYCKJEMY - B.YZDYCKJEMY)/B.YZDYCKJEMY,4)),4)*100 AS YZDYCKJEMYTB,
+            ROUND(DECODE(B.YZDQJKSL,0,NULL,NULL,NULL,ROUND((A.YZDQJKSL - B.YZDQJKSL)/B.YZDQJKSL,4)),4)*100 AS YZDQJKSLTB,
+            ROUND(DECODE(B.YZDQJKJEMY,0,NULL,NULL,NULL,ROUND((A.YZDQJKJEMY - B.YZDQJKJEMY)/B.YZDQJKJEMY,4)),4)*100 AS YZDQJKJEMYTB
+        FROM
+        (SELECT
+            CPID,
+            SUM(DQCKSL) DQCKSL,
+            SUM(DQJKSL) DQJKSL,
+            SUM(DQCKJEMY) DQCKJEMY,
+            SUM(DQJKJEMY) DQJKJEMY,
+            SUM(YZDYCKSL) YZDYCKSL,
+            SUM(YZDYCKJEMY) YZDYCKJEMY,
+            SUM(YZDQJKSL) YZDQJKSL,
+            SUM(YZDQJKJEMY) YZDQJKJEMY
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ = #{time}
+            AND CPID IN ('08081000','08133000')
+        GROUP BY CPID
+        ORDER BY CPID) A,
+        (SELECT
+            CPID,
+            SUM(DQCKSL) DQCKSL,
+            SUM(DQJKSL) DQJKSL,
+            SUM(DQCKJEMY) DQCKJEMY,
+            SUM(DQJKJEMY) DQJKJEMY,
+            SUM(YZDYCKSL) YZDYCKSL,
+            SUM(YZDYCKJEMY) YZDYCKJEMY,
+            SUM(YZDQJKSL) YZDQJKSL,
+            SUM(YZDQJKJEMY) YZDQJKJEMY
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+            AND CPID IN ('08081000','08133000')
+        GROUP BY CPID
+        ORDER BY CPID) B,
+        (SELECT
+            CPID,
+            SUM(DQCKSL) DQCKSL,
+            SUM(DQJKSL) DQJKSL,
+            SUM(DQCKJEMY) DQCKJEMY,
+            SUM(DQJKJEMY) DQJKJEMY,
+            SUM(YZDYCKSL) YZDYCKSL,
+            SUM(YZDYCKJEMY) YZDYCKJEMY,
+            SUM(YZDQJKSL) YZDQJKSL,
+            SUM(YZDQJKJEMY) YZDQJKJEMY
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND CPID IN ('08081000','08133000')
+        GROUP BY CPID
+        ORDER BY CPID) C
+        WHERE A.CPID = B.CPID AND A.CPID = C.CPID)
+        --苹果汁出口量、进口量、出口额、进口额以及环比同比
+        UNION
+        (SELECT
+            '20097000' AS CPID,
+            A.DQCKSL,
+            A.DQJKSL,
+            A.DQCKJEMY,
+            A.DQJKJEMY,
+            A.YZDYCKSL,
+            A.YZDYCKJEMY,
+            A.YZDQJKSL,
+            A.YZDQJKJEMY,
+            ROUND(DECODE(B.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS CKLTB,
+            ROUND(DECODE(B.DQJKSL,0,NULL,NULL,NULL,ROUND((A.DQJKSL - B.DQJKSL)/B.DQJKSL,4)),4)*100 AS JKLTB,
+            ROUND(DECODE(B.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - B.DQCKJEMY)/B.DQCKJEMY,4)),4)*100 AS CKETB,
+            ROUND(DECODE(B.DQJKJEMY,0,NULL,NULL,NULL,ROUND((A.DQJKJEMY - B.DQJKJEMY)/B.DQJKJEMY,4)),4)*100 AS JKETB,
+            ROUND(DECODE(C.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - C.DQCKSL)/C.DQCKSL,4)),4)*100 AS CKLHB,
+            ROUND(DECODE(C.DQJKSL,0,NULL,NULL,NULL,ROUND((A.DQJKSL - C.DQJKSL)/C.DQJKSL,4)),4)*100 AS JKLHB,
+            ROUND(DECODE(C.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - C.DQCKJEMY)/C.DQCKJEMY,4)),4)*100 AS CKEHB,
+            ROUND(DECODE(C.DQJKJEMY,0,NULL,NULL,NULL,ROUND((A.DQJKJEMY - C.DQJKJEMY)/C.DQJKJEMY,4)),4)*100 AS JKEHB,
+            ROUND(DECODE(B.YZDYCKSL,0,NULL,NULL,NULL,ROUND((A.YZDYCKSL - B.YZDYCKSL)/B.YZDYCKSL,4)),4)*100 AS YZDYCKSLTB,
+            ROUND(DECODE(B.YZDYCKJEMY,0,NULL,NULL,NULL,ROUND((A.YZDYCKJEMY - B.YZDYCKJEMY)/B.YZDYCKJEMY,4)),4)*100 AS YZDYCKJEMYTB,
+            ROUND(DECODE(B.YZDQJKSL,0,NULL,NULL,NULL,ROUND((A.YZDQJKSL - B.YZDQJKSL)/B.YZDQJKSL,4)),4)*100 AS YZDQJKSLTB,
+            ROUND(DECODE(B.YZDQJKJEMY,0,NULL,NULL,NULL,ROUND((A.YZDQJKJEMY - B.YZDQJKJEMY)/B.YZDQJKJEMY,4)),4)*100 AS YZDQJKJEMYTB
+        FROM
+        (SELECT
+            SUM(DQCKSL) DQCKSL,
+            SUM(DQJKSL) DQJKSL,
+            SUM(DQCKJEMY) DQCKJEMY,
+            SUM(DQJKJEMY) DQJKJEMY,
+            SUM(YZDYCKSL) YZDYCKSL,
+            SUM(YZDYCKJEMY) YZDYCKJEMY,
+            SUM(YZDQJKSL) YZDQJKSL,
+            SUM(YZDQJKJEMY) YZDQJKJEMY
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ = #{time}
+            AND CPID IN ('20097000','20097100','20097900')
+        GROUP BY RQ) A,
+        (SELECT
+            SUM(DQCKSL) DQCKSL,
+            SUM(DQJKSL) DQJKSL,
+            SUM(DQCKJEMY) DQCKJEMY,
+            SUM(DQJKJEMY) DQJKJEMY,
+            SUM(YZDYCKSL) YZDYCKSL,
+            SUM(YZDYCKJEMY) YZDYCKJEMY,
+            SUM(YZDQJKSL) YZDQJKSL,
+            SUM(YZDQJKJEMY) YZDQJKJEMY
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+            AND CPID IN ('20097000','20097100','20097900')
+        GROUP BY RQ) B,
+        (SELECT
+            SUM(DQCKSL) DQCKSL,
+            SUM(DQJKSL) DQJKSL,
+            SUM(DQCKJEMY) DQCKJEMY,
+            SUM(DQJKJEMY) DQJKJEMY,
+            SUM(YZDYCKSL) YZDYCKSL,
+            SUM(YZDYCKJEMY) YZDYCKJEMY,
+            SUM(YZDQJKSL) YZDQJKSL,
+            SUM(YZDQJKJEMY) YZDQJKJEMY
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND CPID IN ('20097000','20097100','20097900')
+        GROUP BY RQ) C)
+        ORDER BY CPID
+    </select>
+
+    <select id="getTradeDecodeFreshAppleMajorImportAndExportProvinces" resultType="map">
+        SELECT * FROM
+        --月度贸易报告鲜苹果出口排名top1
+        (SELECT
+            A.CKSF AS XPGCKSF,
+            A.DQCKSL AS XPGDQCKSL,
+            A.DQCKJEMY AS XPGDQCKJEWMY,
+            ROUND(DECODE(C.DQCKSL,0,NULL,NULL,NULL,ROUND(A.DQCKSL/C.DQCKSL,4)),4)*100 AS XPGDQCKLZB,
+            ROUND(DECODE(C.DQCKJEMY,0,NULL,NULL,NULL,ROUND(A.DQCKJEMY/C.DQCKJEMY,4)),4)*100 AS XPGDQCKJEMYZB,
+            ROUND(DECODE(B.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS XPGDQCKLTB,
+            ROUND(DECODE(B.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - B.DQCKJEMY)/B.DQCKJEMY,4)),4)*100 AS XPGDQCKJETB,
+            ROUND(DECODE(F.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - F.DQCKSL)/F.DQCKSL,4)),4)*100 AS XPGDQCKLHB,
+            ROUND(DECODE(F.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - F.DQCKJEMY)/F.DQCKJEMY,4)),4)*100 AS XPGDQCKJEHB
+        FROM
+        --当月鲜苹果出口排名top1
+        (SELECT * FROM
+        (SELECT
+            ROWNUM AS NO,
+            CKSF,
+            DQCKSL,
+            DQCKJEMY
+        FROM
+        (SELECT
+                B.SF AS CKSF,
+                SUM(A.DQCKSL) DQCKSL,
+                SUM(A.DQCKJEMY) DQCKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+                AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQCKSL DESC)) WHERE NO = 1) A,
+        --上个月鲜苹果出口排名
+        (SELECT
+            B.SF AS CKSF,
+            SUM(A.DQCKSL) DQCKSL,
+            SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC) F,
+        --前一年同月鲜苹果出口排名
+        (SELECT
+                B.SF AS CKSF,
+                SUM(A.DQCKSL) DQCKSL,
+                SUM(A.DQCKJEMY) DQCKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+                AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQCKSL DESC) B,
+        (SELECT
+                SUM(DQCKSL) DQCKSL,
+                SUM(DQJKSL) DQJKSL,
+                SUM(DQCKJEMY) DQCKJEMY,
+                SUM(DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK
+            WHERE RQ = #{time}
+                AND CPID = '08081000'
+            GROUP BY RQ) C
+        WHERE A.CKSF = B.CKSF(+)
+            AND A.CKSF = F.CKSF(+)),
+
+            --月度贸易报告鲜苹果出口排名top2
+        (SELECT
+            A.CKSF AS XPGCKTOP2SF,
+            A.DQCKSL AS XPGDQCKSLTOP2,
+            A.DQCKJEMY AS XPGDQCKJEWMYTOP2,
+            ROUND(DECODE(C.DQCKSL,0,NULL,NULL,NULL,ROUND(A.DQCKSL/C.DQCKSL,4)),4)*100 AS XPGDQCKLTOP2ZB,
+            ROUND(DECODE(C.DQCKJEMY,0,NULL,NULL,NULL,ROUND(A.DQCKJEMY/C.DQCKJEMY,4)),4)*100 AS XPGDQCKJEMYTOP2ZB,
+            ROUND(DECODE(B.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS XPGDQCKLTOP2TB,
+            ROUND(DECODE(B.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - B.DQCKJEMY)/B.DQCKJEMY,4)),4)*100 AS XPGDQCKJETOP2TB,
+            ROUND(DECODE(F.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - F.DQCKSL)/F.DQCKSL,4)),4)*100 AS XPGDQCKLTOP2HB,
+            ROUND(DECODE(F.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - F.DQCKJEMY)/F.DQCKJEMY,4)),4)*100 AS XPGDQCKJETOP2HB
+        FROM
+        --当月鲜苹果出口排名
+        (SELECT * FROM
+        (SELECT
+            ROWNUM AS NO,
+            CKSF,
+            DQCKSL,
+            DQCKJEMY
+        FROM
+        (SELECT
+                B.SF AS CKSF,
+                SUM(A.DQCKSL) DQCKSL,
+                SUM(A.DQCKJEMY) DQCKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+                AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQCKSL DESC)) WHERE NO = 2) A,
+        --上个月鲜苹果出口排名
+        (SELECT
+            B.SF AS CKSF,
+            SUM(A.DQCKSL) DQCKSL,
+            SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC) F,
+        --前一年同月鲜苹果出口排名
+        (SELECT
+                B.SF AS CKSF,
+                SUM(A.DQCKSL) DQCKSL,
+                SUM(A.DQCKJEMY) DQCKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+                AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQCKSL DESC) B,
+        (SELECT
+                SUM(DQCKSL) DQCKSL,
+                SUM(DQJKSL) DQJKSL,
+                SUM(DQCKJEMY) DQCKJEMY,
+                SUM(DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK
+            WHERE RQ = #{time}
+                AND CPID = '08081000'
+            GROUP BY RQ) C
+        WHERE A.CKSF = B.CKSF(+)
+            AND A.CKSF = F.CKSF(+)),
+
+        --月度贸易报告鲜苹果出口排名top3
+        (SELECT
+            A.CKSF AS XPGCKTOP3SF,
+            A.DQCKSL AS XPGDQCKSLTOP3,
+            A.DQCKJEMY AS XPGDQCKJEWMYTOP3,
+            ROUND(DECODE(C.DQCKSL,0,NULL,NULL,NULL,ROUND(A.DQCKSL/C.DQCKSL,4)),4)*100 AS XPGDQCKLTOP3ZB,
+            ROUND(DECODE(C.DQCKJEMY,0,NULL,NULL,NULL,ROUND(A.DQCKJEMY/C.DQCKJEMY,4)),4)*100 AS XPGDQCKJEMYTOP3ZB,
+            ROUND(DECODE(B.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS XPGDQCKLTOP3TB,
+            ROUND(DECODE(B.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - B.DQCKJEMY)/B.DQCKJEMY,4)),4)*100 AS XPGDQCKJETOP3TB,
+            ROUND(DECODE(F.DQCKSL,0,NULL,NULL,NULL,ROUND((A.DQCKSL - F.DQCKSL)/F.DQCKSL,4)),4)*100 AS XPGDQCKLTOP3HB,
+            ROUND(DECODE(F.DQCKJEMY,0,NULL,NULL,NULL,ROUND((A.DQCKJEMY - F.DQCKJEMY)/F.DQCKJEMY,4)),4)*100 AS XPGDQCKJETOP3HB
+        FROM
+        --当月鲜苹果出口排名
+        (SELECT * FROM
+        (SELECT
+            ROWNUM AS NO,
+            CKSF,
+            DQCKSL,
+            DQCKJEMY
+        FROM
+        (SELECT
+                B.SF AS CKSF,
+                SUM(A.DQCKSL) DQCKSL,
+                SUM(A.DQCKJEMY) DQCKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+                AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQCKSL DESC)) WHERE NO = 3) A,
+        --上个月鲜苹果出口排名
+        (SELECT
+            B.SF AS CKSF,
+            SUM(A.DQCKSL) DQCKSL,
+            SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC) F,
+        --前一年同月鲜苹果出口排名
+        (SELECT
+                B.SF AS CKSF,
+                SUM(A.DQCKSL) DQCKSL,
+                SUM(A.DQCKJEMY) DQCKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+                AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQCKSL DESC) B,
+        (SELECT
+                SUM(DQCKSL) DQCKSL,
+                SUM(DQJKSL) DQJKSL,
+                SUM(DQCKJEMY) DQCKJEMY,
+                SUM(DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK
+            WHERE RQ = #{time}
+                AND CPID = '08081000'
+            GROUP BY RQ) C
+        WHERE A.CKSF = B.CKSF(+)
+            AND A.CKSF = F.CKSF(+)),
+
+        --月度贸易报告鲜苹果进口排名top1
+        (SELECT
+            D.JKSF AS XPGJKSF,
+            D.DQJKSL AS XPGDQJKSL,
+            D.DQJKJEMY AS XPGDQJKJEWMY,
+            ROUND(DECODE(C.DQJKSL,0,NULL,NULL,NULL,ROUND(D.DQJKSL/C.DQJKSL,4)),4)*100 AS XPGDQJKLZB,
+            ROUND(DECODE(C.DQJKJEMY,0,NULL,NULL,NULL,ROUND(D.DQJKJEMY/C.DQJKJEMY,4)),4)*100 AS XPGDQJKJEMYZB,
+            ROUND(DECODE(D.DQJKSL,0,NULL,NULL,NULL,ROUND((D.DQJKSL - E.DQJKSL)/E.DQJKSL,4)),4)*100 AS XPGDQJKLTB,
+            ROUND(DECODE(D.DQJKJEMY,0,NULL,NULL,NULL,ROUND((D.DQJKJEMY - E.DQJKJEMY)/E.DQJKJEMY,4)),4)*100 AS XPGDQJKJETB,
+            ROUND(DECODE(G.DQJKSL,0,NULL,NULL,NULL,ROUND((D.DQJKSL - G.DQJKSL)/G.DQJKSL,4)),4)*100 AS XPGDQJKLHB,
+            ROUND(DECODE(G.DQJKJEMY,0,NULL,NULL,NULL,ROUND((D.DQJKJEMY - G.DQJKJEMY)/G.DQJKJEMY,4)),4)*100 AS XPGDQJKJEHB
+        FROM
+        --当月鲜苹果进口排名
+        (SELECT * FROM
+        (SELECT
+            ROWNUM AS NO,
+            JKSF,
+            DQJKSL,
+            DQJKJEMY
+        FROM
+        (SELECT
+                B.SF AS JKSF,
+                SUM(A.DQJKSL) DQJKSL,
+                SUM(A.DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+                AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQJKSL DESC)) WHERE NO = 1) D,
+        --上月鲜苹果进口排名
+        (SELECT
+                B.SF AS JKSF,
+                SUM(A.DQJKSL) DQJKSL,
+                SUM(A.DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+                AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQJKSL DESC) G,
+        --前一月鲜苹果进口排名
+        (SELECT
+                B.SF AS JKSF,
+                SUM(A.DQJKSL) DQJKSL,
+                SUM(A.DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+                AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQJKSL DESC) E,
+        --进出口总量
+        (SELECT
+                SUM(DQCKSL) DQCKSL,
+                SUM(DQJKSL) DQJKSL,
+                SUM(DQCKJEMY) DQCKJEMY,
+                SUM(DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK
+            WHERE RQ = #{time}
+                AND CPID = '08081000'
+            GROUP BY RQ) C
+        WHERE D.JKSF = E.JKSF(+)
+            AND D.JKSF = G.JKSF(+)),
+        --月度贸易报告鲜苹果进口排名top2
+        (SELECT
+            H.JKSF AS XPGJKTOP2SF,
+            H.DQJKSL AS XPGDQJKSLTOP2,
+            H.DQJKJEMY AS XPGDQJKJEWMYTOP2,
+            ROUND(DECODE(C.DQJKSL,0,NULL,NULL,NULL,ROUND(H.DQJKSL/C.DQJKSL,4)),4)*100 AS XPGDQJKLTOP2ZB,
+            ROUND(DECODE(C.DQJKJEMY,0,NULL,NULL,NULL,ROUND(H.DQJKJEMY/C.DQJKJEMY,4)),4)*100 AS XPGDQJKJEMYTOP2ZB,
+            ROUND(DECODE(E.DQJKSL,0,NULL,NULL,NULL,ROUND((H.DQJKSL - E.DQJKSL)/E.DQJKSL,4)),4)*100 AS XPGDQJKLTOP2TB,
+            ROUND(DECODE(E.DQJKJEMY,0,NULL,NULL,NULL,ROUND((H.DQJKJEMY - E.DQJKJEMY)/E.DQJKJEMY,4)),4)*100 AS XPGDQJKJETOP2TB,
+            ROUND(DECODE(G.DQJKSL,0,NULL,NULL,NULL,ROUND((H.DQJKSL - G.DQJKSL)/G.DQJKSL,4)),4)*100 AS XPGDQJKLTOP2HB,
+            ROUND(DECODE(G.DQJKJEMY,0,NULL,NULL,NULL,ROUND((H.DQJKJEMY - G.DQJKJEMY)/G.DQJKJEMY,4)),4)*100 AS XPGDQJKJETOP2HB
+        FROM
+        --当月鲜苹果进口排名top2
+        (SELECT * FROM
+        (SELECT
+            ROWNUM AS NO,
+            JKSF,
+            DQJKSL,
+            DQJKJEMY
+        FROM
+        (SELECT
+                B.SF AS JKSF,
+                SUM(A.DQJKSL) DQJKSL,
+                SUM(A.DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+                AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQJKSL DESC)) WHERE NO = 2) H,
+        --上月鲜苹果进口排名
+        (SELECT
+                B.SF AS JKSF,
+                SUM(A.DQJKSL) DQJKSL,
+                SUM(A.DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+                AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQJKSL DESC) G,
+        --前一年鲜苹果进口排名
+        (SELECT
+                B.SF AS JKSF,
+                SUM(A.DQJKSL) DQJKSL,
+                SUM(A.DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+            WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+                AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+            GROUP BY SF
+            ORDER BY DQJKSL DESC) E,
+        --进出口总量
+        (SELECT
+                SUM(DQCKSL) DQCKSL,
+                SUM(DQJKSL) DQJKSL,
+                SUM(DQCKJEMY) DQCKJEMY,
+                SUM(DQJKJEMY) DQJKJEMY
+            FROM JJSJ_GJMY_MYQK
+            WHERE RQ = #{time}
+                AND CPID = '08081000'
+            GROUP BY RQ) C
+        WHERE H.JKSF = G.JKSF(+)
+            AND H.JKSF = E.JKSF(+))
+    </select>
+
+    <!--鲜苹果进口省份top2主要进口国家排名top1，出口省份top1主要出口国家排名top2-->
+    <select id="getTradeDecodeFreshAppleMajorImportAndExportCountry" resultType="map">
+        --鲜苹果进口省份top2主要进口国家排名top1，出口省份top1主要出口国家排名top2
+        SELECT
+            A.GJMC AS CKLTOP1GJMC,
+            A.DQCKSL AS CKLTOP1DQCKSL,
+            A.DQCKJEMY AS CKLTOP1DQCKJEMY,
+            B.GJMC AS CKLTOP2GJMC,
+            B.DQCKSL AS CKLTOP2DQCKSL,
+            B.DQCKJEMY AS CKLTOP2DQCKJEMY,
+            C.JKGJMC AS JKSFTOP1JKLTOP1GJMC,
+            C.DQJKSL AS JKSFTOP1JKLTOP1DQJKSL,
+            C.DQJKJEMY AS JKSFTOP1JKLTOP1DQJKJEMY,
+            D.JKGJMC AS JKSFTOP2JKLTOP1GJMC,
+            D.DQJKSL AS JKSFTOP2JKLTOP1DQJKSL,
+            D.DQJKJEMY AS JKSFTOP2JKLTOP1DQJKJEMY,
+            E.GJMC AS TOP2CKLTOP1GJMC,                       --鲜苹果出口省份TOP2的国家top1
+            E.DQCKSL AS TOP2CKLTOP1DQCKSL,                   --鲜苹果出口省份TOP2的国家出口数量top1
+            E.DQCKJEMY AS TOP2CKLTOP1DQCKJEMY,               --鲜苹果出口省份TOP2的国家出口金额美元top1
+            F.GJMC AS TOP2CKLTOP2GJMC,                       --鲜苹果出口省份TOP2的国家top2
+            F.DQCKSL AS TOP2CKLTOP2DQCKSL,                   --鲜苹果出口省份TOP2的国家出口数量top2
+            F.DQCKJEMY AS TOP2CKLTOP2DQCKJEMY,               --鲜苹果出口省份TOP2的国家出口金额美元top2
+            G.GJMC AS TOP3CKLTOP1GJMC,                       --鲜苹果出口省份TOP3的国家top1
+            G.DQCKSL AS TOP3CKLTOP1DQCKSL,                   --鲜苹果出口省份TOP3的国家出口数量top1
+            G.DQCKJEMY AS TOP3CKLTOP1DQCKJEMY,               --鲜苹果出口省份TOP3的国家出口金额美元top1
+            H.GJMC AS TOP3CKLTOP2GJMC,                       --鲜苹果出口省份TOP3的国家top2
+            H.DQCKSL AS TOP3CKLTOP2DQCKSL,                   --鲜苹果出口省份TOP3的国家出口数量top2
+            H.DQCKJEMY AS TOP3CKLTOP2DQCKJEMY                --鲜苹果出口省份TOP3的国家出口金额美元top2
+        --鲜苹果主要出口国家排名top1
+        FROM
+        (SELECT * FROM
+        (SELECT
+        ROWNUM AS NO,
+        GJMC,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.GJMC,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF = (
+        SELECT CKSF FROM
+        (SELECT
+        ROWNUM AS NO,
+        CKSF,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.SF AS CKSF,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC)) WHERE NO = 1)
+        AND DQCKSL IS NOT NULL AND A.CPID = '08081000'
+        GROUP BY GJMC
+        ORDER BY DQCKSL DESC)) WHERE  NO = 1) A,
+        --鲜苹果主要出口国家排名top2
+        (SELECT * FROM
+        (SELECT
+        ROWNUM AS NO,
+        GJMC,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.GJMC,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF = (
+        SELECT CKSF FROM
+        (SELECT
+        ROWNUM AS NO,
+        CKSF,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.SF AS CKSF,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC)) WHERE NO = 1)
+        AND DQCKSL IS NOT NULL AND A.CPID = '08081000'
+        GROUP BY GJMC
+        ORDER BY DQCKSL DESC)) WHERE  NO = 2) B,
+        --鲜苹果进口省份top1主要进口国家排名top1
+        (SELECT * FROM
+        (SELECT
+        B.GJMC AS JKGJMC,
+        SUM(A.DQJKSL) DQJKSL,
+        SUM(A.DQJKJEMY) DQJKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF =
+        (SELECT JKSF FROM
+        (SELECT * FROM
+        (SELECT
+        B.SF AS JKSF,
+        SUM(A.DQJKSL) DQJKSL,
+        SUM(A.DQJKJEMY) DQJKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQJKSL DESC)
+        WHERE ROWNUM = 1)
+        )
+        AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+        GROUP BY GJMC
+        ORDER BY DQJKSL DESC) WHERE ROWNUM = 1) C,
+        --鲜苹果进口省份top2主要进口国家排名top1
+        (SELECT * FROM
+        (SELECT
+        B.GJMC AS JKGJMC,
+        SUM(A.DQJKSL) DQJKSL,
+        SUM(A.DQJKJEMY) DQJKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF =
+        (SELECT JKSF FROM
+        ((SELECT * FROM
+        (SELECT
+        B.SF AS JKSF,
+        SUM(A.DQJKSL) DQJKSL,
+        SUM(A.DQJKJEMY) DQJKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQJKSL DESC)
+        WHERE ROWNUM &lt;= 2)
+        MINUS
+        (SELECT * FROM
+        (SELECT
+        B.SF AS JKSF,
+        SUM(A.DQJKSL) DQJKSL,
+        SUM(A.DQJKJEMY) DQJKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQJKSL DESC)
+        WHERE ROWNUM = 1)
+        )
+        )
+        AND A.CPID = '08081000' AND A.DQJKSL IS NOT NULL
+        GROUP BY GJMC
+        ORDER BY DQJKSL DESC) WHERE ROWNUM = 1) D,
+        --鲜苹果出口省份TOP2的国家top1
+        (SELECT * FROM
+        (SELECT
+        ROWNUM AS NO,
+        GJMC,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.GJMC,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF = (
+        SELECT CKSF FROM
+        (SELECT
+        ROWNUM AS NO,
+        CKSF,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.SF AS CKSF,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC)) WHERE NO = 2)
+        AND DQCKSL IS NOT NULL AND A.CPID = '08081000'
+        GROUP BY GJMC
+        ORDER BY DQCKSL DESC)) WHERE  NO = 1) E,
+        --鲜苹果出口省份TOP2的国家top2
+        (SELECT * FROM
+        (SELECT
+        ROWNUM AS NO,
+        GJMC,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.GJMC,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF = (
+        SELECT CKSF FROM
+        (SELECT
+        ROWNUM AS NO,
+        CKSF,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.SF AS CKSF,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC)) WHERE NO = 2)
+        AND DQCKSL IS NOT NULL AND A.CPID = '08081000'
+        GROUP BY GJMC
+        ORDER BY DQCKSL DESC)) WHERE  NO = 2) F,
+        --鲜苹果出口省份TOP3的国家top1
+        (SELECT * FROM
+        (SELECT
+        ROWNUM AS NO,
+        GJMC,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.GJMC,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF = (
+        SELECT CKSF FROM
+        (SELECT
+        ROWNUM AS NO,
+        CKSF,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.SF AS CKSF,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC)) WHERE NO = 3)
+        AND DQCKSL IS NOT NULL AND A.CPID = '08081000'
+        GROUP BY GJMC
+        ORDER BY DQCKSL DESC)) WHERE  NO = 1) G,
+        --鲜苹果出口省份TOP3的国家top2
+        (SELECT * FROM
+        (SELECT
+        ROWNUM AS NO,
+        GJMC,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.GJMC,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_GJHDQ B,JJSJ_GJMY_DQXX C
+        WHERE A.GJID = B.GJID AND SUBSTR(A.DQID, 1, 2) = C.DQID AND RQ = #{time} AND C.SF = (
+        SELECT CKSF FROM
+        (SELECT
+        ROWNUM AS NO,
+        CKSF,
+        DQCKSL,
+        DQCKJEMY
+        FROM
+        (SELECT
+        B.SF AS CKSF,
+        SUM(A.DQCKSL) DQCKSL,
+        SUM(A.DQCKJEMY) DQCKJEMY
+        FROM JJSJ_GJMY_MYQK A,JJSJ_GJMY_DQXX B
+        WHERE  SUBSTR(A.DQID, 1, 2) = B.DQID AND RQ = #{time}
+        AND A.CPID = '08081000' AND A.DQCKSL IS NOT NULL
+        GROUP BY SF
+        ORDER BY DQCKSL DESC)) WHERE NO = 3)
+        AND DQCKSL IS NOT NULL AND A.CPID = '08081000'
+        GROUP BY GJMC
+        ORDER BY DQCKSL DESC)) WHERE  NO = 2) H
+    </select>
+
+    <select id="getTradeDecodeChart" resultType="map">
+        (SELECT
+            A.CPID,
+            A.RQ,
+            A.DQCKSL,
+            A.DQJKSL,
+            ROUND(DECODE(B.DQCKSL,0,0,NULL,0,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS CKLTB,
+            ROUND(DECODE(B.DQJKSL,0,0,NULL,0,ROUND((A.DQJKSL - B.DQJKSL)/B.DQJKSL,4)),4)*100 AS JKLTB,
+            ROUND(DECODE(C.DQCKSL,0,0,NULL,0,ROUND((A.DQCKSL - C.DQCKSL)/C.DQCKSL,4)),4)*100 AS CKLHB,
+            ROUND(DECODE(C.DQJKSL,0,0,NULL,0,ROUND((A.DQJKSL - C.DQJKSL)/C.DQJKSL,4)),4)*100 AS JKLHB
+        FROM
+        (SELECT
+            CPID,
+            RQ,
+            NVL(SUM(DQCKSL), 0) DQCKSL,
+            NVL(SUM(DQJKSL), 0) DQJKSL
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-5),'YYYYMM') AND #{time}
+            AND CPID IN ('08081000','08133000')
+        GROUP BY CPID,RQ
+        ORDER BY CPID,RQ) A,
+        (SELECT
+            CPID,
+            RQ,
+            NVL(SUM(DQCKSL), 0) DQCKSL,
+            NVL(SUM(DQJKSL), 0) DQJKSL
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6),'YYYYMM'),-5),'YYYYMM') AND SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+            AND CPID IN ('08081000','08133000')
+        GROUP BY CPID,RQ
+        ORDER BY CPID,RQ) B,
+        (SELECT
+            CPID,
+            RQ,
+            NVL(SUM(DQCKSL), 0) DQCKSL,
+            NVL(SUM(DQJKSL), 0) DQJKSL
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-6),'YYYYMM') AND TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND CPID IN ('08081000','08133000')
+        GROUP BY CPID,RQ
+        ORDER BY CPID,RQ) C
+        WHERE A.CPID = B.CPID
+            AND A.CPID = C.CPID
+            AND A.RQ = SUBSTR(B.RQ,1,4)+1||SUBSTR(B.RQ,5,6)
+            AND A.RQ = to_char(add_months(trunc(to_date(C.RQ,'yyyyMM')),+1),'yyyymm')
+        )
+        UNION
+        (SELECT
+            '20097000' AS CPID,
+            A.RQ,
+            A.DQCKSL,
+            A.DQJKSL,
+            ROUND(DECODE(B.DQCKSL,0,0,NULL,0,ROUND((A.DQCKSL - B.DQCKSL)/B.DQCKSL,4)),4)*100 AS CKLTB,
+            ROUND(DECODE(B.DQJKSL,0,0,NULL,0,ROUND((A.DQJKSL - B.DQJKSL)/B.DQJKSL,4)),4)*100 AS JKLTB,
+            ROUND(DECODE(C.DQCKSL,0,0,NULL,0,ROUND((A.DQCKSL - C.DQCKSL)/C.DQCKSL,4)),4)*100 AS CKLHB,
+            ROUND(DECODE(C.DQJKSL,0,0,NULL,0,ROUND((A.DQJKSL - C.DQJKSL)/C.DQJKSL,4)),4)*100 AS JKLHB
+        FROM
+        (SELECT
+            RQ,
+            NVL(SUM(DQCKSL), 0) DQCKSL,
+            NVL(SUM(DQJKSL), 0) DQJKSL
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-5),'YYYYMM') AND #{time}
+            AND CPID IN ('20097000','20097100','20097900')
+        GROUP BY RQ
+        ORDER BY RQ) A,
+        (SELECT
+            RQ,
+            NVL(SUM(DQCKSL), 0) DQCKSL,
+            NVL(SUM(DQJKSL), 0) DQJKSL
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6),'YYYYMM'),-5),'YYYYMM') AND SUBSTR(#{time},1,4)-1||SUBSTR(#{time},5,6)
+            AND CPID IN ('20097000','20097100','20097900')
+        GROUP BY RQ
+        ORDER BY RQ) B,
+        (SELECT
+            RQ,
+            NVL(SUM(DQCKSL), 0) DQCKSL,
+            NVL(SUM(DQJKSL), 0) DQJKSL
+        FROM JJSJ_GJMY_MYQK
+        WHERE RQ BETWEEN TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-6),'YYYYMM') AND TO_CHAR(ADD_MONTHS(TO_DATE(#{time},'YYYYMM'),-1),'YYYYMM')
+            AND CPID IN ('20097000','20097100','20097900')
+        GROUP BY RQ
+        ORDER BY RQ) C
+        WHERE A.RQ = SUBSTR(B.RQ,1,4)+1||SUBSTR(B.RQ,5,6)
+            AND A.RQ = to_char(add_months(trunc(to_date(C.RQ,'yyyyMM')),+1),'yyyymm'))
+    </select>
+</mapper>

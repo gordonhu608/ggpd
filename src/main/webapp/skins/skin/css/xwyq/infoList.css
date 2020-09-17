@@ -1,0 +1,301 @@
+/* 浠ヤ笅閫傞厤璁剧疆鏄拡瀵规湰绯荤粺璁剧疆鐨勭壒瀹氬��  涓嶉�氱敤  */
+@media screen and (width: 1200px) {
+    html {
+        font-size: 100px;
+        min-width: 100%;
+    }
+}
+
+@media screen and (min-width: 899px) {
+    html {
+        font-size: 74.96339678px !important;
+    }
+}
+
+@media screen and (min-width: 1124px) {
+    html {
+        font-size: 93.70424597px !important;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    html {
+        font-size: 100px !important;
+    }
+}
+
+@media screen and (min-width: 1265px) {
+    html {
+        font-size: 105.41727672px !important;
+    }
+}
+
+@media screen and (min-width: 1405px) {
+    html {
+        font-size: 117.13030747px !important
+    }
+}
+
+@media screen and (min-width: 1686px) {
+    html {
+        font-size: 140.55636897px !important;
+    }
+}
+
+@media screen and (min-width: 3373px) {
+    html {
+        font-size: 281.11273792px !important;
+    }
+}
+
+html {
+    width: 100%;
+}
+
+body {
+    font-family: arial,microsoft yahei,simsun,simhei,sans-serif;
+    font-size: 0.14rem;
+    width: 100%;
+    margin: 0;
+    padding-bottom: 0.4rem;
+}
+
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+ul, li {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: #000;
+}
+
+::-webkit-scrollbar {/*锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷式*/
+    width: 6px;     /*锟竭匡拷锟街憋拷锟接︼拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷某叽锟�*/
+    height: 1px;
+}
+
+::-webkit-scrollbar-thumb {/*锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷小锟斤拷锟斤拷*/
+    border-radius: 5px;
+    background: #ccc;
+}
+
+::-webkit-scrollbar-track {/*锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷*/
+    border-radius: 5px;
+}
+.container {
+    width: 100%;
+    border: 1px solid #E1DFDA;
+    border-top: 2px solid #024A84;
+    overflow: hidden;
+    position: relative;
+}
+
+.crumbs {
+    height: 0.46rem;
+    line-height: 0.46rem;
+    color: #A39F99;
+    background: url(../../img/crumbs_bg.png) no-repeat;
+    background-position: left center;
+    padding-left: 0.24rem;
+}
+
+.crumbs span {
+    color: #333;
+}
+.crumbs span.home{
+    color: #A39F99;
+    cursor: pointer;
+}
+
+.left_content {
+    float: left;
+    width: 20%;
+    background-color: #F9F7FB;
+    border-right: 1px solid #D3D9DE;
+}
+
+.left_title {
+    width: 100%;
+    height: 0.58rem;
+    line-height: 0.58rem;
+    background-color: #005391;
+    color: #fff;
+    font-size: 0.16rem;
+    text-align: center;
+}
+
+.left_tab {
+    width: 100%;
+    padding: 0.05rem 0.25rem 0.52rem;
+}
+
+.left_tab > div {
+    width: 100%;
+    height: 0.58rem;
+    line-height: 0.57rem;
+    font-size: 0.14rem;
+    border-bottom: 1px solid #E3E1DE;
+    color: #333;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.left_tab > div:hover,
+.left_tab > div.active {
+    color: #F97C51;
+}
+
+.left_tab > div span {
+    display: inline-block;
+    width: 0.32rem;
+    height: 0.32rem;
+    vertical-align: middle;
+    margin-right: 0.1rem;
+}
+
+.left_tab > div:first-child span {
+    background: url("../../img/news/news.png") no-repeat;
+    background-size: 100% 100%;
+}
+
+.left_tab > div:last-child span {
+    background: url("../../img/news/yuqing.png") no-repeat;
+    background-size: 100% 100%;
+}
+
+.left_tab > div:first-child:hover span,
+.left_tab > div:first-child.active span {
+    background: url("../../img/news/news1.png") no-repeat;
+    background-size: 100% 100%;
+}
+
+.left_tab > div:last-child:hover span,
+.left_tab > div:last-child.active span {
+    background: url("../../img/news/yuqing1.png") no-repeat;
+    background-size: 100% 100%;
+}
+
+.word_cloud {
+    width: 100%;
+    height: 2.7rem;
+    border-top: 1px solid #D1DBDE;
+    position: relative;
+    padding-top: 0.4rem;
+}
+
+.word_cloud_title {
+    position: absolute;
+    top: 0;
+    left: 30%;
+    width: 0.96rem;
+    height: 0.26rem;
+    line-height: 0.26rem;
+    color: #fff;
+    text-align: center;
+    background: url("../../img/news/wordCloud.png") no-repeat;
+    background-size: 100% 100%;
+}
+
+.word_cloud_chart {
+    width: 100%;
+    height: 100%;
+}
+
+.right_content {
+    float: left;
+    width: 80%;
+    padding: 0.1rem 0.26rem 0 0.32rem;
+}
+
+.right_top {
+    width: 100%;
+    height: 0.68rem;
+    padding: 0.2rem 0;
+    border-bottom: 1px dashed #E1DFDA;
+}
+
+.right_title {
+    float: left;
+    height: 0.28rem;
+    border-left: 0.06rem solid #0089C5;
+    padding-left: 0.1rem;
+    font-size: 0.2rem;
+    color: #004972;
+    font-weight: 600;
+}
+
+.search {
+    width: 2.32rem;
+    height: 0.32rem;
+    border: 1px solid #ECEAE8;
+    padding-left: 0.1rem;
+    outline: none;
+}
+
+.search_btn {
+    display: inline-block;
+    width: 0.68rem;
+    height: 0.32rem;
+    line-height: 0.32rem;
+    color: #fff;
+    background-color: #FF2B00;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.search_btn .fa {
+    font-size: 0.16rem;
+    margin: 0.06rem 0.03rem 0 0.1rem;
+}
+
+.info_list ul {
+    padding: 0.1rem 0;
+    border-bottom: 1px dashed #E1DFDA;
+}
+
+.info_list li {
+    width: 100%;
+    height: 0.42rem;
+    line-height: 0.42rem;
+}
+
+.info_list li span:first-child {
+    display: block;
+    float: left;
+    width: 0.05rem;
+    height: 0.05rem;
+    border-radius: 0.05rem;
+    margin-top: 0.18rem;
+    margin-right: 0.1rem;
+    background-color: #9A9691;
+}
+
+.info_list li a {
+    display: block;
+    float: left;
+    max-width: 88%;
+    font-size: 0.16rem;
+    color: #333;
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}
+
+.info_list li span:last-child {
+    float: right;
+    font-size: 0.14rem;
+    color: #9A9691;
+}
+
+.paging {
+    width: 100%;
+    height: 0.74rem;
+    padding-top: 0.2rem;
+}

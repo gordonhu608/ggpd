@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inspur.ggpd.resource.catalog.dao.SourceShowConfigMapper">
+    <select id="findAll" resultType="com.inspur.ggpd.resource.catalog.data.SourceShowConfig">
+        SELECT ID, TABLE_CODE,CASE WHEN ORG_NAME IS NULL THEN FIELD_NAME ELSE ORG_NAME END AS FIELD_NAME, SHOW_FLAG, TITLE, ORDER_NO FROM SOURCE_SHOW_CONFIG
+        WHERE SHOW_FLAG = 1 AND TABLE_CODE = #{tableCode} ORDER BY ORDER_NO
+    </select>
+
+    <select id="findAll_" resultType="com.inspur.ggpd.resource.catalog.data.SourceShowConfig">
+        SELECT ID, TABLE_CODE, FIELD_NAME, SHOW_FLAG, TITLE, ORDER_NO,ORG_NAME FROM SOURCE_SHOW_CONFIG
+        WHERE SHOW_FLAG = 1 AND TABLE_CODE = #{tableCode} ORDER BY ORDER_NO
+    </select>
+</mapper>
